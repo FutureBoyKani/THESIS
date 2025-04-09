@@ -1,0 +1,210 @@
+import cv2
+import numpy as np
+from picamera2 import Picamera2
+import time
+import os
+import datetime
+import csv
+
+PIXELS_PER_METER = 63625    #calculate your pixels per meter
+
+def connect_edges_with_closing(edges, kernel_size=(5, 5)):
+    """
+    Connect edges from Canny edge detection using morphological closing.
+    
+    Args:
+        edges: Binary edge image from Canny detector
+        kernel_size: Size of the morphological kernel
+        
+    Returns:
+        Processed image with connected edges
+    """
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, kernel_size)
+    closed_edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+    return closed_edges
+
+def connect_edges_multi_kernel(edges):
+    # Start with small kernel, progressively increase
+    result = edges.copy()
+    for size in [3, 5, 7]:
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size))
+        result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, kernel)
+    return result
+
+# def connect_edges_directional(edges):
+#     result = edges.copy()
+#     # Horizontal kernel
+#     h_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (9, 1))
+#     h_closed = cv2.morphologyEx(result, cv2.MORPH_CLOSE, h_kernel)
+#     # Vertical kernel
+#     v_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 9))
+#     v_closed = cv2.morphologyEx(result, cv2.MORPH_CLOSE, v_kernel)
+#     # Combine both directions
+#     result = cv2.bitwise_or(h_closed, v_closed)
+#     return result
+
+# def connect_edges_hough(edges, rho=1, theta=np.pi/180, threshold=50):
+#     lines = cv2.HoughLinesP(edges, rho, theta, threshold, minLineLength=10, maxLineGap=5)
+#     result = np.zeros_like(edges)
+#     if lines is not None:
+#         for line in lines:
+#             x1, y1, x2, y2 = line[0]
+#             cv2.line(result, (x1, y1), (x2, y2), 255, 1)
+#     # Optionally follow with light closing
+#     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+#     result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, kernel)
+#     return result
+
+
+def canny(image, pixel_to_mm_ratio=None, low_threshold=6, high_threshold=7, aperture_size=3):
+
+    # Make a copy of the original images
+    original = image.copy()
+    
+    # Convert to grayscale first
+    gray = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY)
+    
+    # Apply Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    
+    # Define kernel for morphological operations
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    
+    # Apply Canny edge detector
+    edges = cv2.Canny(blurred, low_threshold, high_threshold, apertureSize=aperture_size)
+    
+    # Connect edges using closing algorithms
+    # connected_edges = connect_edges_with_closing(edges, kernel_size=(5, 5))
+    connected_edges = connect_edges_multi_kernel(edges)
+    return connected_edges
+
+def area_calc(connected_edges, min_area=800033, max_area=2000000000):
+    """
+    Calculate the total area of regions enclosed by connected edges.
+    
+    Args:
+        connected_edges: Binary image with connected edges from Canny detection
+        minimum_area: Minimum contour area to consider (filters out noise)
+        
+    Returns:
+        total_area: Total area of all significant contours in pixels
+        contours: List of significant contours found
+    """
+    # Create a copy of the connected edges
+    edges_copy = connected_edges.copy()
+    
+    # Find contours in the connected edges
+    contours, _ = cv2.findContours(edges_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # # Filter contours by minimum area and calculate total area
+    # significant_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area and cv2.contourArea(cnt) < max_area]
+    # largest_contour = min(significant_contours, key=cv2.contourArea)
+    # total_area = cv2.contourArea(largest_contour)
+    
+    significant_contours = []
+    total_area = 0
+    
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area > min_area and area < max_area:
+            significant_contours.append(contour)
+            total_area += area
+            
+    area_m2 = (total_area / (PIXELS_PER_METER ** 2))*10000  # Convert to cm²
+    
+    return total_area, significant_contours, area_m2
+    
+output_dir = "pi_timelapse_images"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+output_dir2 = "Area_CSV_file"
+if not os.path.exists(output_dir2):
+    os.makedirs(output_dir2)
+    
+output_dir3 = "pi_timelapse_images_test1"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
+output_dir4 = "Area_CSV_file_test1"
+if not os.path.exists(output_dir2):
+    os.makedirs(output_dir2)
+
+def main():
+    try:
+        picam2 = Picamera2()
+        config = picam2.create_still_configuration(
+            main={"size": (3840, 2160)},
+            controls={"AfMode": 0}
+        )
+        
+        picam2.configure(config)
+        x = 20  # Interval in seconds
+        last_capture_time = 0
+        
+        picam2.start()
+        picam2.set_controls({"LensPosition": 30})
+        time.sleep(2)
+        print("Starting edge detection. Press 'q' to quit.")
+        
+        while True:
+          frame = picam2.capture_array()
+          edges = canny(frame)
+          
+          crack_area, significant_contours, area_m2 = area_calc(edges)
+          cv2.drawContours(frame, significant_contours, -1, (0, 255, 0), 2)
+          
+          cv2.imshow("frame", frame)
+          cv2.imshow("edge", edges)
+          current_time = time.time()
+          key = cv2.waitKey(1) & 0xFF
+          
+          
+          if key == ord('s'):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                screen_shot = f"{output_dir3}/edge_image_{timestamp}.jpg"
+                screen_shot2 = f"{output_dir4}/original{timestamp}.jpg"
+                cv2.imwrite(screen_shot, edges)
+                cv2.imwrite(screen_shot2, frame)
+                print(f"Captured: {screen_shot} | Pixel: {crack_area:.2f} px | Area: {area_m2: .2f}")
+
+          
+          if current_time - last_capture_time >= x:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            
+            edge_pic = f"{output_dir3}/edge_image_{timestamp}.jpg"
+            screen_shot2 = f"{output_dir4}/original_{timestamp}.jpg"
+            
+            cv2.imwrite(edge_pic, edges)
+            cv2.imwrite(screen_shot2, frame)
+            
+            print(f"Captured: {edge_pic} | Area: {crack_area:.2f} px | {area_m2:.4f} cm²")
+            
+            csv_file = os.path.join(output_dir2, "Area_cm2.csv")
+
+            zero = 0 
+            
+            with open(csv_file, 'a', newline='') as f:
+                write = csv.writer(f)
+                write.writerow(['timestamp', 'last_capture_time', 'crack_area', 'area_m2'])
+                write.writerow([timestamp, zero, crack_area, area_m2])
+                zero = zero+0.2
+            last_capture_time = current_time
+            
+  
+         
+          if key == ord('q'):
+                break
+              
+
+        
+  
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        picam2.stop()
+        cv2.destroyAllWindows()
+        
+
+if __name__ == "__main__":
+    main()      
