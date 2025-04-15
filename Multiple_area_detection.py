@@ -12,12 +12,16 @@ PIXELS_PER_METER = 15748   # Calculate your pixels per meter
 # Format: [(x_start, y_start, width, height), ...]
 # Example with 2 regions:
 ROIS = [
-    (1000, 800, 700, 600),    # ROI 1: (x, y, width, height)
-    (2000, 800, 700, 600)    # ROI 2: (x, y, width, height)
+    (600, 300, 700, 600),    # ROI 1: (x, y, width, height)
+    (1600, 300, 700, 600),    # ROI 2: (x, y, width, height)
+    (2600, 300, 700, 600),    # ROI 3: (x, y, width, height)
+    (600, 1300, 700, 600),    # ROI 4: (x, y, width, height)
+    (1600, 1300, 700, 600),    # ROI 5: (x, y, width, height)
+    (2600, 1300, 700, 600)    # ROI 6: (x, y, width, height)
 ]
 
 # You can add more ROIs as needed
-ROI_NAMES = ["Plastic_1_in_water", "Plastic_2_in_acid"]  # Names for each ROI
+ROI_NAMES = ["PLA_100-EthylAce_0-Ehtanol", "PLA_80-EthylAce_20-Ehtanol","PLA_60-EthylAce_40-Ehtanol","PLA_40-EthylAce_60-Ehtanol", "PLA_20-EthylAce_80-Ehtanol", "PLA_0-EthylAce_100-Ehtanol"]  # Names for each ROI
 
 def connect_edges_with_closing(edges, kernel_size=(5, 5)):
     """
@@ -129,12 +133,12 @@ def setup_directories(test_id):
 # Add this function to resize an image to half its size
 def resize_half(image):
     """Resize an image to half its original dimensions"""
-    h, w = image.shape[:4]
-    return cv2.resize(image, (w//4, h//4))
+    h, w = image.shape[:2]
+    return cv2.resize(image, (w//2, h//2))
 
 def main(test_id="001"):
     try:
-        # Set up directories
+        # # Set up directories
         dirs = setup_directories(test_id)
         
         # Initialize camera
@@ -148,9 +152,9 @@ def main(test_id="001"):
         interval = 10  # Interval in seconds
         last_capture_time = 0            # Add a second timer for screenshot capture
         last_screenshot_time = 0  
-        screenshot_interval = 1800  # 30 minutes in seconds
-        roi_interval = 120
-        last_roi_time = 0
+        screenshot_interval = 900 # 30 minutes in seconds
+        roi_interval = 60
+        last_roi_time = 0 
         
         picam2.start()
         picam2.set_controls({"LensPosition": 3})
@@ -202,75 +206,77 @@ def main(test_id="001"):
             current_time = time.time()
             key = cv2.waitKey(1) & 0xFF
             
-            # # Manual capture with 's' key
-            # if key == ord('s'):
-            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Manual capture with 's' key
+            if key == ord('s'):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 
+                # Save main frame with half resolution
+                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
+                resized_frame = resize_half(frame)
+                cv2.imwrite(main_img_path, resized_frame)
+                
+                # Save each ROI with half resolution
+                for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
+                    edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
+                    contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
+                    # Resize the images to half size
+                    resized_edge = resize_half(edges)
+                    resized_pic = resize_half(contour_image)
+                    cv2.imwrite(edge_path, resized_edge)
+                    cv2.imwrite(contour_path, resized_pic)
+                
+                print(f"Manually captured at {timestamp}")
+                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
+                    print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
+                    
+
+            # # In main loop:
+            # current_time = time.time()
+
+            # # Screenshot capture every 30 minutes
+            # if current_time - last_screenshot_time >= screenshot_interval:
+            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             #     # Save main frame
             #     main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-            #     cv2.imwrite(main_img_path, frame)
-                
+            #     resized_frame = resize_half(frame)
+            #     cv2.imwrite(main_img_path, resized_frame)
+            #     last_screenshot_time = current_time
+            #     print(f"Screenshots captured at {timestamp}")
+
+            # # Take screenshots of ROI
+            # if current_time - last_roi_time >= roi_interval:
+            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             #     # Save each ROI
             #     for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
             #         edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
             #         contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
-            #         cv2.imwrite(edge_path, edges)
-            #         cv2.imwrite(contour_path, contour_image)
+            #         # Resize the taken images from camera
+            #         resized_edge = resize_half(edges)
+            #         resized_pic = resize_half(contour_image)
+            #         cv2.imwrite(edge_path, resized_edge)
+            #         cv2.imwrite(contour_path, resized_pic)
+            #     last_roi_time = current_time
+            #     print(f"ROI_Screenshots captured at {timestamp}")
+
+            # # Data capture for CSV every 10 seconds
+            # if current_time - last_capture_time >= interval:
+            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            #     elapsed_time = current_time - start_time
                 
-            #     print(f"Manually captured at {timestamp}")
+            #     # Save ROI data
+            #     row_data = [timestamp, f"{elapsed_time:.2f}"]
+                
+            #     # Add each ROI's data to CSV row
             #     for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
+            #         row_data.extend([pixel_area, area_cm2])
             #         print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
-            
-
-            # In your main loop:
-            current_time = time.time()
-
-            # Screenshot capture every 30 minutes
-            if current_time - last_screenshot_time >= screenshot_interval:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 
-                # Save main frame
-                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(frame)
-                cv2.imwrite(main_img_path, resized_frame)              
-                last_screenshot_time = current_time
-                print(f"Screenshots captured at {timestamp}")
-             
-            #take a screenshots of ROI   
-            if current_time - last_roi_time >= roi_interval:
-                # Save each ROI
-                for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
-                    edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
-                    contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
-                    
-                    #resize the taken images from camera
-                    resized_edge = resized_frame(edges)
-                    resized_pic = resized_frame(contour_image)
-                    
-                    cv2.imwrite(edge_path, resized_edge)
-                    cv2.imwrite(contour_path, resized_pic)
-                    last_screenshot_time = current_time
-                    print(f"ROI_Screenshots captured at {timestamp}")
-
-            # Data capture for CSV every 10 seconds
-            if current_time - last_capture_time >= interval:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                elapsed_time = current_time - start_time
+            #     # Write to CSV
+            #     with open(csv_file, 'a', newline='') as f:
+            #         writer = csv.writer(f)
+            #         writer.writerow(row_data)
                 
-                # Save ROI data
-                row_data = [timestamp, f"{elapsed_time:.2f}"]
-                
-                # Add each ROI's data to CSV row
-                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
-                    row_data.extend([pixel_area, area_cm2])
-                    print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
-                
-                # Write to CSV
-                with open(csv_file, 'a', newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(row_data)
-                
-                last_capture_time = current_time
+            #     last_capture_time = current_time
             
             
             if key == ord('q'):
