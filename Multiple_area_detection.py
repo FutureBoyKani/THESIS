@@ -6,22 +6,21 @@ import os
 import datetime
 import csv
 
-PIXELS_PER_METER = 15748   # Calculate your pixels per meter
+PIXELS_PER_METER = 16436   # Calculate your pixels per meter
 
 # Define your regions of interest (ROIs)
 # Format: [(x_start, y_start, width, height), ...]
 # Example with 2 regions:
 ROIS = [
-    (600, 300, 700, 600),    # ROI 1: (x, y, width, height)
-    (1600, 300, 700, 600),    # ROI 2: (x, y, width, height)
-    (2600, 300, 700, 600),    # ROI 3: (x, y, width, height)
-    (600, 1300, 700, 600),    # ROI 4: (x, y, width, height)
-    (1600, 1300, 700, 600),    # ROI 5: (x, y, width, height)
-    (2600, 1300, 700, 600)    # ROI 6: (x, y, width, height)
+    (100, 200, 700, 600),    # ROI 1: (x, y, width, height)
+    (1500, 200, 700, 600),    # ROI 2: (x, y, width, height)
+    (3000, 200, 700, 600),    # ROI 3: (x, y, width, height)
+    (700, 1300, 1000, 800),    # ROI 4: (x, y, width, height)
+    (2300, 1300, 1000, 800)    # ROI 6: (x, y, width, height)
 ]
 
 # You can add more ROIs as needed
-ROI_NAMES = ["PLA_100-EthylAce_0-Ehtanol", "PLA_80-EthylAce_20-Ehtanol","PLA_60-EthylAce_40-Ehtanol","PLA_40-EthylAce_60-Ehtanol", "PLA_20-EthylAce_80-Ehtanol", "PLA_0-EthylAce_100-Ehtanol"]  # Names for each ROI
+ROI_NAMES = ["PLA_100-EthylAce_0-Ehtanol", "PLA_75-EthylAce_25-Ehtanol", "PLA_50-EthylAce_50-Ehtanol", "PLA_25-EthylAce_75-Ehtanol","PLA_0-EthylAce_100-Ehtanol"]  # Names for each ROI
 
 def connect_edges_with_closing(edges, kernel_size=(5, 5)):
     """
@@ -46,7 +45,7 @@ def connect_edges_multi_kernel(edges):
         result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, kernel)
     return result
 
-def canny(image, low_threshold=15, high_threshold=27, aperture_size=3):
+def canny(image, low_threshold=25, high_threshold=40, aperture_size=3):
     # Make a copy of the original image
     original = image.copy()
     
@@ -63,7 +62,7 @@ def canny(image, low_threshold=15, high_threshold=27, aperture_size=3):
     connected_edges = connect_edges_multi_kernel(edges)
     return connected_edges
 
-def area_calc(connected_edges, min_area=9912, max_area=10000000):
+def area_calc(connected_edges, min_area=9912, max_area=5000000):
     """
     Calculate the total area of regions enclosed by connected edges.
     
@@ -230,53 +229,71 @@ def main(test_id="001"):
                     print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
                     
 
-            # # In main loop:
-            # current_time = time.time()
+            # In main loop:
+            current_time = time.time()
 
-            # # Screenshot capture every 30 minutes
-            # if current_time - last_screenshot_time >= screenshot_interval:
-            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            #     # Save main frame
-            #     main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-            #     resized_frame = resize_half(frame)
-            #     cv2.imwrite(main_img_path, resized_frame)
-            #     last_screenshot_time = current_time
-            #     print(f"Screenshots captured at {timestamp}")
+            # Screenshot capture every 30 minutes
+            if current_time - last_screenshot_time >= screenshot_interval:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                # Save main frame
+                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
+                resized_frame = resize_half(frame)
+                cv2.imwrite(main_img_path, resized_frame)
+                last_screenshot_time = current_time
+                print(f"Screenshots captured at {timestamp}")
 
-            # # Take screenshots of ROI
-            # if current_time - last_roi_time >= roi_interval:
-            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            #     # Save each ROI
-            #     for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
-            #         edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
-            #         contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
-            #         # Resize the taken images from camera
-            #         resized_edge = resize_half(edges)
-            #         resized_pic = resize_half(contour_image)
-            #         cv2.imwrite(edge_path, resized_edge)
-            #         cv2.imwrite(contour_path, resized_pic)
-            #     last_roi_time = current_time
-            #     print(f"ROI_Screenshots captured at {timestamp}")
+            # Take screenshots of ROI
+            if current_time - last_roi_time >= roi_interval:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                # Save each ROI
+                for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
+                    edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
+                    contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
+                    # Resize the taken images from camera
+                    resized_edge = resize_half(edges)
+                    resized_pic = resize_half(contour_image)
+                    cv2.imwrite(edge_path, resized_edge)
+                    cv2.imwrite(contour_path, resized_pic)
+                last_roi_time = current_time
+                current_time - last_capture_time >= interval
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                elapsed_time = current_time - start_time
+                
+                # Save ROI data
+                row_data = [timestamp, f"{elapsed_time:.2f}"]
+                
+                # Add each ROI's data to CSV row
+                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
+                    row_data.extend([pixel_area, area_cm2])
+                    print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
+                
+                # Write to CSV
+                with open(csv_file, 'a', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(row_data)
+                
+                last_capture_time = current_time
+            # nt(f"ROI_Screenshots captured at {timestamp}")
 
-            # # Data capture for CSV every 10 seconds
-            # if current_time - last_capture_time >= interval:
-            #     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            #     elapsed_time = current_time - start_time
+            # Data capture for CSV every 10 seconds
+            if current_time - last_capture_time >= interval:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                elapsed_time = current_time - start_time
                 
-            #     # Save ROI data
-            #     row_data = [timestamp, f"{elapsed_time:.2f}"]
+                # Save ROI data
+                row_data = [timestamp, f"{elapsed_time:.2f}"]
                 
-            #     # Add each ROI's data to CSV row
-            #     for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
-            #         row_data.extend([pixel_area, area_cm2])
-            #         print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
+                # Add each ROI's data to CSV row
+                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
+                    row_data.extend([pixel_area, area_cm2])
+                    print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
                 
-            #     # Write to CSV
-            #     with open(csv_file, 'a', newline='') as f:
-            #         writer = csv.writer(f)
-            #         writer.writerow(row_data)
+                # Write to CSV
+                with open(csv_file, 'a', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(row_data)
                 
-            #     last_capture_time = current_time
+                last_capture_time = current_time
             
             
             if key == ord('q'):
