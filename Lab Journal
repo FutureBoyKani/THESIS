@@ -39,12 +39,15 @@ Date 4/04/25
 
 Date 7/04/25
   Experiment 001 was started using the code 'Area_det_single'.
-    This was done with ABS in Acetone.
+    This was done with ABS in Acetone and water mix.
     To get the area detection accurate, The day was spent finetuning the parameters of the canny edge code manually untill a consistent and correct area was read.
     Experiment was made to run overnight.
 
 Date 8/04/25
-  Data of experiment 001 was lost. This was due to an error in the code. Since when a new reading was started, it deleted the old measurments. 
+  error in the code was found. Since when a new reading was started, it deleted the old measurments. Due to this the taken pictures of the ABS plastic were lost
+  A mistake was also made that the petri dish was not covered. So the acetone was evapurated out during the night and and the lightpad was melted because of that. Still a small decrease in area was noted. However decrease was 
+  so small that it can't be said if that is because of the acetone or just inaccuracies of the camera, since the acetone was evapurated.
+
   Started experiment 002:
     First experiment was to look at multiple things. Firstly see if the Region Of Interest code worked for multiple plastics and to see if it will be ran trough the whole day.
     the plastic used was PLC. It was places in 2 small petri dishes. One filled with demi water and the other filled with demi water and HCl. To look if their is a difference in dissolving between normal and acidic envoriments.
