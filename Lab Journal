@@ -1,7 +1,53 @@
 Lab Journal: Kaan Yalcin:
 
+Date 23/03/25
 
+Date 7/04/25
+  Experiment 001 was started using the code 'notin'.
 
+Date 8/04/25
+  Data of experiment 001 was lost. This was due to an error in the code. Since when a new reading was started, it deleted the old measurments. 
+  Started experiment 002:
+    First experiment was to look at multiple things. Firstly see if the Region Of Interest code worked for multiple plastics and to see if it will be ran trough the whole day.
+    the plastic used was PLC. It was places in 2 small petri dishes. One filled with demi water and the other filled with demi water and HCl. To look if their is a difference in dissolving between normal and acidic envoriments.
+    Every 10 second the area was calculated by the code and a picture was taken.
+
+Date 9/04/25
+  Ended experiment 002:
+    Area did not decerease. Decided to leave the plastic in the solution for a few more days.
+  Some pictures were deleted due to space issues
+  Changed the code a bit to now make a picture of the setup every 60 min. picture of the roi every 30 min and calculate the area every 10 seconds and the picture taken were now halved in resolution
+  This was done so that the pictures would not fill up the memory. 
+
+  Started exp 002-2: same as 002 with different time intervals for measurments.
+
+Date 10/04/25
+  The experiment was kept running
+
+Date 11/04/25
+  The experiment was kept running
+
+Date 14/04/25
+  The experiment was kept running due to strikes.
 
 Date: 15/04/25
+  Ended Experiment 002-2.
+  Data was inconclusive. The area's did not seem to decrease to decrease
+  The results were discussed with Vittorio and it was decided to change the plastic to PLA and to dissolve it in Ethyl Acetate and Ethanol. 
+  For this the code was changed where there were 6 ROI in it. With the ratios being 1(100/0), 2(80/20), 3(60/40), 4(40/60), 5(20/80), 6(0/100)
+  Then the plastics squares were printed out using the 3d printer with the dimentions; 20:20:1 mm
+  Then the setup was finalised for the experiment to start the next day
+
+Date 16/04/25
+  On this day the camera of the raspberry pi was broken
+  It took some time to figure out what part was wrong. Eventually it was concluded that the cable that connects the camera to the pi was not functioning
+  To repair this, a spare cable from my Phd was used.
+  Then it seemed that there were not enough space and petri dishes for all 6 ROI to run. So it was decided to only use 5. Then the each ROI had the following ratio's:
+  1(100/0), 2(75/25), 3(50/50), 4(25/75), 5(0/100)
+  Experiment 003 was started. 
+
+Date 17\04\25
+  Data analysis of exp 002 was started
+  
+  
   
