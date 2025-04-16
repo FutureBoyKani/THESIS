@@ -1,9 +1,47 @@
 Lab Journal: Kaan Yalcin:
 
-Date 23/03/25
+Date 24/03/25
+
+
+
+Date 25/03/25
+
+
+
+
+Date 26/03/25
+
+
+
+Date 27/03/25
+  Resit for minor in Radboud
+
+
+
+
+Date 28/03/25
+
+
+
+Date 31/03/25
+  Resit for minor in Radboud
+
+Date 1/04/25
+
+Date 2/04/25
+
+Date 3/04/25
+  Resit for minor in Radboud
+
+Date 4/04/25
+
+
 
 Date 7/04/25
-  Experiment 001 was started using the code 'notin'.
+  Experiment 001 was started using the code 'Area_det_single'.
+    This was done with ABS in Acetone.
+    To get the area detection accurate, The day was spent finetuning the parameters of the canny edge code manually untill a consistent and correct area was read.
+    Experiment was made to run overnight.
 
 Date 8/04/25
   Data of experiment 001 was lost. This was due to an error in the code. Since when a new reading was started, it deleted the old measurments. 
@@ -37,6 +75,7 @@ Date: 15/04/25
   For this the code was changed where there were 6 ROI in it. With the ratios being 1(100/0), 2(80/20), 3(60/40), 4(40/60), 5(20/80), 6(0/100)
   Then the plastics squares were printed out using the 3d printer with the dimentions; 20:20:1 mm
   Then the setup was finalised for the experiment to start the next day
+  Checked if the area of the plastic would still be acurae if the plastic was broken in multiple pieces. The area stayed roughly the same. Except an increase of arount ~0.1-0.2 cm^2.
 
 Date 16/04/25
   On this day the camera of the raspberry pi was broken
