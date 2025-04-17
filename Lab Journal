@@ -84,12 +84,28 @@ Date 16/04/25
   On this day the camera of the raspberry pi was broken
   It took some time to figure out what part was wrong. Eventually it was concluded that the cable that connects the camera to the pi was not functioning
   To repair this, a spare cable from my Phd was used.
-  Then it seemed that there were not enough space and petri dishes for all 6 ROI to run. So it was decided to only use 5. Then the each ROI had the following ratio's:
+  Then it seemed that there were not enough space and petri dishes for all 6 ROI to run. So it was decided to only use 5. Then the each ROI had the following ratio's of Ethyl Acetaat and Ethanol:
   1(100/0), 2(75/25), 3(50/50), 4(25/75), 5(0/100)
   Experiment 003 was started. 
 
 Date 17\04\25
-  Data analysis of exp 002 was started
+  Experiment 003 was looked at
+    in the 100% Ethyl Acetaat seemed to react the most with it. A area increase was noted by the program and by eye. Also small pieces of plastic could be noticed in the solution. However during the night part of the ethyl Acetaat was evapurated out of 
+    the petri dish and part of it was probably taken in by the plastic acting as a sponge. Hence, the area increase. 
+    Going to lower ratio's ov the Ethyl Acetaat the reaction observed gets less. With the 100% ethanol, it seems to not have increased or decreased any noteworthy amount.
+    During the night the camera seemed to have moved. Due to this quiete alot of the measurments were made invalid. However it is not known how it moved. Either someone bumped into it the following moring or the tape holding the camera in place, had 
+    gotten loose and made the camera sift to the left.
+
+  The experiment 003B was started. This is the same as 003 with 2 changes: The canny edge parameters were changed accordingly to see less noise/unwanted edges and the solvents for the plastics were refillt
+
+    For the next experiment smaller plastic pieces would likely be better with a better fitting lid on the petri dishes. So the evapuration can be lessened and the plastic will take up less of the solvent/dissolve faster in the solvent. 
+
+  Data analysis of exp 002 was started using python.
+
+date 18,19,20,21\04\25
+  Holidays
+
+
   
   
   
