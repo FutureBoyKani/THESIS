@@ -118,10 +118,19 @@ Date 22\04\25
       -Making the ROI circular and the same size as the petri dishes as to fix the problem of the plastic squares moving out of the ROI area --> Multiple_Area_improved
       -Making the plastic pieces thinner, from 1mm --> 0.3mm
       -Having better fitting lids on the petri dishes to prevent evapuration
+      -Try out different shapes of plastic   
+  Print out different shapes of plastic
 
-  Print out 11 pieces of plastic of the dimentions 20mm:20mm:0.3mm
+Date 23/04/25
+ Start Exp 004
+    -Different shapes of plastic in 100% ethyl acetate
+        1. Shape = 'Square' Width: X, Height: Y, Width Z,  Weight w
+        2. Shape = 'circle' radius r,  Width Z,  Weight w
+        3. Shape = 'cross', Width: X, Height: Y, Width Z,  Weight w
+        4. Shape = 'ovale', Width: X, Height: Y, Width Z,  Weight w
+        5. Shape = '#', Width: X, Height: Y, Width Z,  Weight w
 
-Date 23\04\25
+Date xxx\04\25
   Starting Exp 004: 
       Same plastic as 003 (PLA) and also with acetyl acetate and alcohol
         1. 1:0, Width: X, Height: Y, Width Z,  Weight w
