@@ -104,6 +104,57 @@ Date 17\04\25
 
 date 18,19,20,21\04\25
   Holidays
+Date 22\04\25
+  Experiment 003 was ended
+    Points of interest
+      -The 100% ethyl acetate has shown changes in area and the 100% alcohol hasn't
+      -The lowever percentages of ethyl acetate have less area changes
+      -Some of the plastic pieces have seemed to move place, thus the area detection has stopped working
+      -The plastic while dissolving, seems to dissolve first at his thickness and only then on his sides. So it get less thick in the middle, making the sides fold in and making it seem as the area is smaller than in acuallity on the camera
+      -Due to camera distortion effect, the plastic pieces in the middle seem to be smaller than the plastic pieces in the middle.
+
+  Needed Improvements:
+      -Getting rid of the distortian effect using opencv camera calibration: Code Change --> Multiple_Area_improved
+      -Making the ROI circular and the same size as the petri dishes as to fix the problem of the plastic squares moving out of the ROI area --> Multiple_Area_improved
+      -Making the plastic pieces thinner, from 1mm --> 0.3mm
+      -Having better fitting lids on the petri dishes to prevent evapuration
+
+  Print out 11 pieces of plastic of the dimentions 20mm:20mm:0.3mm
+
+Date 23\04\25
+  Starting Exp 004: 
+      Same plastic as 003 (PLA) and also with acetyl acetate and alcohol
+        1. 1:0, Width: X, Height: Y, Width Z,  Weight w
+        2. -0.9:0.1, Width: X, Height: Y, Width Z,  Weight w
+        3. -0.8:0.2, Width: X, Height: Y, Width Z,  Weight w
+        4. -0.7:0.3, Width: X, Height: Y, Width Z,  Weight w
+        5. -0.6:0.4, Width: X, Height: Y, Width Z,  Weight w
+        6. -0.5:0.5, Width: X, Height: Y, Width Z,  Weight w
+        7. -0.4:0.6, Width: X, Height: Y, Width Z,  Weight w
+        8. -0.3:0.7, Width: X, Height: Y, Width Z,  Weight w
+        9. -0.2:0.8, Width: X, Height: Y, Width Z,  Weight w
+        10. -0.9:0.1, Width: X, Height: Y, Width Z,  Weight w
+        11. -0:1, Width: X, Height: Y, Width Z,  Weight w
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   
