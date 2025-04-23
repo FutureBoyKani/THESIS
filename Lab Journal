@@ -122,8 +122,10 @@ Date 22\04\25
   Print out different shapes of plastic
 
 Date 23/04/25
+  Looked further into camera calibration - still no succes.
+
  Start Exp 004
-    -Different shapes of plastic in 100% ethyl acetate
+    -Different shapes of plastic in 100% ethyl acetate printed out
         1. Shape = 'Square' Width: X, Height: Y, Width Z,  Weight w
         2. Shape = 'circle' radius r,  Width Z,  Weight w
         3. Shape = 'cross', Width: X, Height: Y, Width Z,  Weight w
