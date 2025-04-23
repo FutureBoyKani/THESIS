@@ -6,7 +6,7 @@ import time
 import argparse
 from picamera2 import Picamera2
 
-def capture_calibration_images(num_images=20, delay=2, chessboard_size=(8, 6), output_dir="calibration_images"):
+def capture_calibration_images(num_images=15, delay=1, chessboard_size=(8, 6), output_dir="calibration_images"):
     """
     Capture images of a chessboard for camera calibration
     """
@@ -16,7 +16,10 @@ def capture_calibration_images(num_images=20, delay=2, chessboard_size=(8, 6), o
     
     # Initialize the camera
     picam2 = Picamera2()
-    config = picam2.create_still_configuration()
+    config = picam2.create_still_configuration(
+            main={"size": (3840, 2160)},
+            controls={"AfMode": 0}
+        )
     picam2.configure(config)
     picam2.start()
     
@@ -28,7 +31,7 @@ def capture_calibration_images(num_images=20, delay=2, chessboard_size=(8, 6), o
     
     for i in range(num_images):
         print(f"Capturing image {i+1}/{num_images} in 3 seconds...")
-        time.sleep(3)
+        time.sleep(1)
         
         # Capture image
         image = picam2.capture_array()
@@ -46,7 +49,7 @@ def capture_calibration_images(num_images=20, delay=2, chessboard_size=(8, 6), o
     picam2.stop()
     print("Finished capturing calibration images.")
 
-def calibrate_camera(chessboard_size=(8, 6), square_size=1.0, image_dir="calibration_images", output_file="camera_calibration.npz"):
+def calibrate_camera(chessboard_size=(5, 7), square_size=25.0, image_dir="calibration_images", output_file="camera_calibration.npz"):
     """
     Calibrate camera using chessboard images
     """
@@ -97,8 +100,8 @@ def calibrate_camera(chessboard_size=(8, 6), square_size=1.0, image_dir="calibra
     
     cv.destroyAllWindows()
     
-    if successful_images < 10:
-        print(f"Only found chessboard corners in {successful_images} images. Need at least 10 for good calibration.")
+    if successful_images < 5:
+        print(f"Only found chessboard corners in {successful_images} images. Need at least 5 for good calibration.")
         return False
     
     print(f"Successfully processed {successful_images} images.")
@@ -119,6 +122,14 @@ def calibrate_camera(chessboard_size=(8, 6), square_size=1.0, image_dir="calibra
         mean_error += error
     
     print(f"Total reprojection error: {mean_error/len(objpoints)}")
+    
+    if ret:
+        print(f"Chessboard detected in {fname}")
+        cv.drawChessboardCorners(img, chessboard_size, corners2, ret)
+        cv.imshow('Chessboard Corners', img)
+        cv.waitKey(500)
+    else:
+        print(f"Chessboard not detected in {fname}")
     return True
 
 def undistort_test(image_path, calibration_file="camera_calibration.npz"):
@@ -173,7 +184,7 @@ def main():
     parser.add_argument('--chessboard_rows', type=int, default=6,
                       help='Number of internal corners in the chessboard rows')
     
-    parser.add_argument('--chessboard_cols', type=int, default=9,
+    parser.add_argument('--chessboard_cols', type=int, default=8,
                       help='Number of internal corners in the chessboard columns')
     
     parser.add_argument('--square_size', type=float, default=1.0,
