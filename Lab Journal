@@ -125,12 +125,19 @@ Date 23/04/25
   Looked further into camera calibration - still no succes.
 
  Start Exp 004
-    -Different shapes of plastic in 100% ethyl acetate printed out
+    -Different shapes of plastic in 100% ethyl acetate printed out, with Z = 0.5 mm
         1. Shape = 'Square' Width: X, Height: Y, Width Z,  Weight w
         2. Shape = 'circle' radius r,  Width Z,  Weight w
         3. Shape = 'cross', Width: X, Height: Y, Width Z,  Weight w
         4. Shape = 'ovale', Width: X, Height: Y, Width Z,  Weight w
         5. Shape = '#', Width: X, Height: Y, Width Z,  Weight w
+  Width of 0.05 is too thin for the 3d printer. A larger width is necesarry, otherwise the palstic will have small howlse in its area
+
+  The calibration code was made working. However the incorperation of the code into the area detection code has not been able to succeed.
+
+Date 24/04/25
+  -The incorperation of the camera calibration does not seem to work. Today was researched how to get it to work, however I could not find out how to incorperate this.
+    
 
 Date xxx\04\25
   Starting Exp 004: 
