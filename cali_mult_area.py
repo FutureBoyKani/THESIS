@@ -6,13 +6,13 @@ import os
 import datetime
 import csv
 
+PIXELS_PER_METER = 16436   # Calculate your pixels per meter
+
 # Load calibration parameters from NPZ file
 calibration_path = 'camera_calibration.npz'
 calibration_data = np.load(calibration_path)
 camera_matrix = calibration_data['camera_matrix']
 dist_coeffs = calibration_data['dist_coeffs']
-
-PIXELS_PER_METER = 16436   # Calculate your pixels per meter
 
 # Convert 4 cm diameter to pixel radius
 CM_DIAMETER = 4
@@ -22,15 +22,15 @@ RADIUS_PIXELS = int((CM_DIAMETER / 2) * PIXELS_PER_METER / 100)  # Convert cm to
 # Format: [(center_x, center_y), ...]
 ROI_CENTERS = [
     (450, 500),      # ROI 1: center point
-    (1850, 500),     # ROI 2: center point
-    (3350, 500),     # ROI 3: center point
-    (450, 1775),     # ROI 4: center point
-    (1850, 1775),    # ROI 5: center point
-    (3350, 1775)     # ROI 6: center point
+    (1850, 500)     # ROI 2: center point
+    # (3350, 500),     # ROI 3: center point
+    # (450, 1775),    # ROI 4: center point
+    # (1850, 1775),     # ROI 5: center point
+    # (3350, 1775)
 ]
 
 # ROI names remain the same
-ROI_NAMES = ["Shape 1", "Shape 2", "Shape 3", "Shape 4", "Shape 5", "Shape 6"]
+ROI_NAMES = ["Shape 1", "Shape 2", "Shape 3", "Shape 4","Shape 5", "Shape 6"]
 
 def undistort_image(img):
     """
@@ -42,6 +42,12 @@ def undistort_image(img):
     Returns:
         Undistorted image
     """
+    if 'camera_matrix' not in calibration_data or 'dist_coeffs' not in calibration_data:    
+        raise ValueError("Calibration file is missing 'camera_matrix' or 'dist_coeffs'")
+
+    if img is None:
+        raise ValueError("Input image is None. Make sure camera frame was captured correctly.")
+
     h, w = img.shape[:2]
     
     # Get optimal new camera matrix
@@ -111,8 +117,23 @@ def area_calc(connected_edges, min_area=9912, max_area=5000000):
     # Create a copy of the connected edges
     edges_copy = connected_edges.copy()
     
+    # # Area detection with only contours
+    # picam2 = Picamera2()
+    # config = picam2.create_still_configuration(
+    # main={"size": (3840, 2160)},
+    # controls={"AfMode": 1}
+    # )
+
+    # picam2.configure(config)
+    # picam2.start()
+
+    # # Give the camera a moment to adjust
+    # time.sleep(1)
+    # edges_copy = picam2.capture_array()
+    
     # Find contours in the connected edges
     contours, _ = cv2.findContours(edges_copy, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.RETR_EXTERNAL
     
     significant_contours = []
     total_area = 0
@@ -133,6 +154,8 @@ def process_roi(frame, roi_center):
     
     # Create a mask for the circular ROI
     mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+
+
     cv2.circle(mask, (center_x, center_y), RADIUS_PIXELS, 255, -1)
     
     # Extract the ROI using the mask
@@ -199,14 +222,14 @@ def main(test_id="001"):
         interval = 10  # Interval in seconds
         last_capture_time = 0            # Add a second timer for screenshot capture
         last_screenshot_time = 0  
-        screenshot_interval = 900 # 15 minutes in seconds
-        roi_interval = 60  # 1 minute in seconds
+        screenshot_interval = 900 # 30 minutes in seconds
+        roi_interval = 60
         last_roi_time = 0 
         
         picam2.start()
         picam2.set_controls({"LensPosition": 3})
         time.sleep(2)
-        print("Starting edge detection with camera calibration. Press 'q' to quit, 's' to save current frame.")
+        print("Starting edge detection. Press 'q' to quit, 's' to save current frame.")
         
         # Create CSV file with headers
         csv_file = os.path.join(f"Area_CSV_file_test{test_id}", f"Area_cm2_multi_roi_test{test_id}.csv")
@@ -216,14 +239,21 @@ def main(test_id="001"):
             for name in ROI_NAMES:
                 header.extend([f'{name}_pixel_area', f'{name}_area_cm2'])
             writer.writerow(header)
+
+        # Use the original ROI centers directly
+        roi_centers = ROI_CENTERS
         
         start_time = time.time()
         
         while True:
-            # Capture frame and apply undistortion
-            raw_frame = picam2.capture_array()
-            frame = undistort_image(raw_frame)  # Apply calibration to undistort image
-            display_frame = frame.copy()
+            cal_frame = picam2.capture_array() ##Normal Frame     
+
+            # #these two lines are for the callibrated camera (NOT YET WORKING)
+            # frame = picam2.capture_array()
+            # cal_frame = undistort_image(frame) ##calibrated Frame
+
+
+            display_frame = cal_frame.copy()
             
             # Process each ROI
             roi_results = []
@@ -236,7 +266,7 @@ def main(test_id="001"):
                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
                 
                 # Process this ROI
-                edges, contour_image, pixel_area, contours, area_cm2, roi_box = process_roi(frame, center)
+                edges, contour_image, pixel_area, contours, area_cm2, roi_box = process_roi(cal_frame, center)
                 roi_results.append((edges, contour_image, pixel_area, contours, area_cm2, roi_box))
                 
                 # Display area info on frame
@@ -245,8 +275,7 @@ def main(test_id="001"):
                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             
             # Show main frame with ROI boxes
-            display_resized = resize_half(display_frame)  # Resize for display
-            cv2.imshow("Main View (Calibrated)", display_resized)
+            cv2.imshow("Main View", display_frame)
             
             # Show separate windows for each ROI's edge detection and contours
             for i, (edges, contour_image, _, _, _, _) in enumerate(roi_results):
@@ -260,10 +289,10 @@ def main(test_id="001"):
             if key == ord('s'):
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 
-                # Save only the calibrated frame
-                img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(frame)
-                cv2.imwrite(img_path, resized_frame)
+                # Save main frame with half resolution
+                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
+                resized_frame = resize_half(cal_frame)
+                cv2.imwrite(main_img_path, resized_frame)
                 
                 # Save each ROI with half resolution
                 for i, (edges, contour_image, pixel_area, _, area_cm2, _) in enumerate(roi_results):
@@ -279,18 +308,17 @@ def main(test_id="001"):
                 for i, (_, _, pixel_area, _, area_cm2, _) in enumerate(roi_results):
                     print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
                     
-            # Screenshot capture every 15 minutes (900 seconds)
+            # Screenshot capture every 30 minutes
             if current_time - last_screenshot_time >= screenshot_interval:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                # Save only the calibrated frame
-                img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(frame)
-                cv2.imwrite(img_path, resized_frame)
-                
+                # Save main frame
+                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
+                resized_frame = resize_half(cal_frame)
+                cv2.imwrite(main_img_path, resized_frame)
                 last_screenshot_time = current_time
-                print(f"Screenshot captured at {timestamp}")
+                print(f"Screenshots captured at {timestamp}")
 
-            # Take screenshots of ROI every minute
+            # Take screenshots of ROI
             if current_time - last_roi_time >= roi_interval:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 # Save each ROI
