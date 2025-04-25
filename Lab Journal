@@ -137,6 +137,18 @@ Date 23/04/25
 
 Date 24/04/25
   -The incorperation of the camera calibration does not seem to work. Today was researched how to get it to work, however I could not find out how to incorperate this.
+
+date 25/04/25
+  -Decided to use the uncallibrated camera on different shapes. The shapes are dissolved in ethyl acetate. The dimension of the shapes are given below with their areas. However the areas found with the code and area reduction
+    will not be accurate. Since the camera is not calibrated. So the results of this experiment won't be important. We shall take more of a look at how the plastic dissolves and if it can be left alone for over the weekend.
+
+        1. Shape = 'Square' Width: 20mm, Height: 20mm, Width 0.6mm, Area: 400mm, Weight 0.31g,
+        2. Shape = 'circle' Diameter 21mm,  Width 0.6mm , Area: 365,   Weight 0.22g,
+        3. Shape = 'cross', Width (per staff): 5.10, Height(per staff): 30, Width 0.6, area: 106  Weight 0.35g 
+        4. Shape = 'Square with Whole', Width: 20, Height: 20, Width 0.6, diameter_in: 9.74, Area:325.34, Weight 0.25g
+        5. shape = 'circle with whole, diameter_o: 21mm, diameter_i = 11.3 , area:  261, weigh 0.16g
+        3. Shape = '#', Width (per staff): 5.10, Height(per staff): 30, Width 0.6, area: 508  Weight 0.47g 
+
     
 
 Date xxx\04\25
