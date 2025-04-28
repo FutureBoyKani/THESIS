@@ -151,21 +151,20 @@ date 25/04/25
 
     
 
-Date xxx\04\25
-  Starting Exp 004: 
-      Same plastic as 003 (PLA) and also with acetyl acetate and alcohol
-        1. 1:0, Width: X, Height: Y, Width Z,  Weight w
-        2. -0.9:0.1, Width: X, Height: Y, Width Z,  Weight w
-        3. -0.8:0.2, Width: X, Height: Y, Width Z,  Weight w
-        4. -0.7:0.3, Width: X, Height: Y, Width Z,  Weight w
-        5. -0.6:0.4, Width: X, Height: Y, Width Z,  Weight w
-        6. -0.5:0.5, Width: X, Height: Y, Width Z,  Weight w
-        7. -0.4:0.6, Width: X, Height: Y, Width Z,  Weight w
-        8. -0.3:0.7, Width: X, Height: Y, Width Z,  Weight w
-        9. -0.2:0.8, Width: X, Height: Y, Width Z,  Weight w
-        10. -0.9:0.1, Width: X, Height: Y, Width Z,  Weight w
-        11. -0:1, Width: X, Height: Y, Width Z,  Weight w
+Date 28/04/25
+  Data analisis on exp 001 to 003 was completed: Data from 001 and 002 mostly seem like noise/camera mis readings. 003 had showed some increase in area size and then a decrease at the beginning. Which seems to agree with the fact that the plastic is dissolving
 
+  Weekly meeting with Vittorio and Xiangyu
+    Decided that the area calculation with the code was not reliable and good enough
+      --> Will take a look in measuring the light intensity, Since then we plastic is dissolving a dark 'cloud' of plastic pieces form around the plastic, this interferce with the edge detection
+          out thought is to use this as a form of measurment. To measure the pixel intensity within the ROI. Then correlate this pixel intensity back to that the plastic is dissoling and may even back to the thickness of the plastic.
+          Finally it is a thought of combining both the edge detection and the light intensity measurments, to get a better understanding of how th eplastic is dissolving.
+
+  I also decided that it is not necessarry at this moment to do multiple ROI measurment at the same time. Since the camera does not seem to handle that well, as the calibration code does not seem to work as expected. For this reason it was decided to 
+  only have, maybe 2 ROI's to put the focus more on the individual pieces. Then later in the project to take a look at how it could be expended to work wilt multiple plastic pieces at the same time. A way could be to use more than one pi camera, or to make the calibration code
+  fully working
+
+  Research was done to look further into this plan and a start was made to to get the code for pixel intensity working.
 
 
 
