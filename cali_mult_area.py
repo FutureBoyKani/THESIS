@@ -6,21 +6,67 @@ import os
 import datetime
 import csv
 
-PIXELS_PER_METER = 16436   # Calculate your pixels per meter
+PIXELS_PER_METER = 24094   # Calculate your pixels per meter
 
-# Define your regions of interest (ROIs)
-# Format: [(x_start, y_start, width, height), ...]
-# Example with 2 regions:
-ROIS = [
-    (100, 200, 700, 600),    # ROI 1: (x, y, width, height)
-    (1500, 200, 700, 600),    # ROI 2: (x, y, width, height)
-    (3000, 200, 700, 600),    # ROI 3: (x, y, width, height)
-    (700, 1400, 1000, 750),    # ROI 4: (x, y, width, height)
-    (2300, 1400, 1000, 750)    # ROI 6: (x, y, width, height)
+# Load calibration parameters from NPZ file
+calibration_path = 'camera_calibration.npz'
+calibration_data = np.load(calibration_path)
+camera_matrix = calibration_data['camera_matrix']
+dist_coeffs = calibration_data['dist_coeffs']
+
+# Convert 4 cm diameter to pixel radius
+CM_DIAMETER = 3
+RADIUS_PIXELS = int((CM_DIAMETER / 2) * PIXELS_PER_METER / 100)  # Convert cm to meters, then to pixels
+
+# Define your regions of interest (ROIs) as center points (x, y)
+# Format: [(center_x, center_y), ...]
+ROI_CENTERS = [
+    # (450, 500),      # ROI 1: center point
+    # (1850, 500),     # ROI 2: center point
+    # (3350, 500),     # ROI 3: center point
+    # (450, 1775),    # ROI 4: center point
+    # (1850, 1775),     # ROI 5: center point
+    (3350, 1775)
 ]
 
-# You can add more ROIs as needed
-ROI_NAMES = ["PLA_100-EthylAce_0-Ehtanol", "PLA_75-EthylAce_25-Ehtanol", "PLA_50-EthylAce_50-Ehtanol", "PLA_25-EthylAce_75-Ehtanol","PLA_0-EthylAce_100-Ehtanol"]  # Names for each ROI
+# ROI names remain the same
+ROI_NAMES = ["Shape 1", "Shape 2", "Shape 3", "Shape 4","Shape 5", "Shape 6"]
+
+def undistort_image(img):
+    """
+    Apply camera calibration to undistort an image
+    
+    Args:
+        img: Image to undistort
+        
+    Returns:
+        Undistorted image
+    """
+    if 'camera_matrix' not in calibration_data or 'dist_coeffs' not in calibration_data:    
+        raise ValueError("Calibration file is missing 'camera_matrix' or 'dist_coeffs'")
+
+    if img is None:
+        raise ValueError("Input image is None. Make sure camera frame was captured correctly.")
+
+    h, w = img.shape[:2]
+    
+    # Get optimal new camera matrix
+    new_camera_matrix, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coeffs, (w, h), 1, (w, h))
+    
+    # Convert the image to the expected format
+    img_mat = cv2.UMat(img)
+    
+    # Undistort the image
+    undistorted = cv2.undistort(img_mat, camera_matrix, dist_coeffs, None, new_camera_matrix)
+    
+    # Convert back to CPU array for further processing
+    undistorted = undistorted.get()
+    
+    # Crop the image based on ROI from getOptimalNewCameraMatrix
+    x, y, w, h = roi
+    undistorted = undistorted[y:y+h, x:x+w]
+    
+    return undistorted
 
 def connect_edges_with_closing(edges, kernel_size=(5, 5)):
     """
@@ -45,7 +91,7 @@ def connect_edges_multi_kernel(edges):
         result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, kernel)
     return result
 
-def canny(image, low_threshold=95, high_threshold=115, aperture_size=3):
+def canny(image, low_threshold=85, high_threshold=105, aperture_size=3):
     # Make a copy of the original image
     original = image.copy()
     
@@ -77,13 +123,23 @@ def area_calc(connected_edges, min_area=9912, max_area=5000000):
     # Create a copy of the connected edges
     edges_copy = connected_edges.copy()
     
-    # Find contours in the connected edges
-    contours, _ = cv2.findContours(edges_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # # Area detection with only contours
+    # picam2 = Picamera2()
+    # config = picam2.create_still_configuration(
+    # main={"size": (3840, 2160)},
+    # controls={"AfMode": 1}
+    # )
+
+    # picam2.configure(config)
+    # picam2.start()
+
+    # # Give the camera a moment to adjust
+    # time.sleep(1)
+    # edges_copy = picam2.capture_array()
     
-    # # Filter contours by minimum area and calculate total area
-    # significant_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > min_area and cv2.contourArea(cnt) < max_area]
-    # largest_contour = max(significant_contours, key=cv2.contourArea)
-    # total_area = cv2.contourArea(largest_contour)
+    # Find contours in the connected edges
+    contours, _ = cv2.findContours(edges_copy, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.RETR_EXTERNAL
     
     significant_contours = []
     total_area = 0
@@ -98,22 +154,43 @@ def area_calc(connected_edges, min_area=9912, max_area=5000000):
     
     return total_area, significant_contours, area_m2
 
-def process_roi(frame, roi):
-    """Process a single region of interest"""
-    x, y, w, h = roi
-    roi_image = frame[y:y+h, x:x+w]
+def process_roi(frame, roi_center):
+    """Process a single circular region of interest"""
+    center_x, center_y = roi_center
+    
+    # Create a mask for the circular ROI
+    mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+
+
+    cv2.circle(mask, (center_x, center_y), RADIUS_PIXELS, 255, -1)
+    
+    # Extract the ROI using the mask
+    roi_image = cv2.bitwise_and(frame, frame, mask=mask)
+    
+    # Create a rectangular bounding box for the circle to work with
+    x1 = max(0, center_x - RADIUS_PIXELS)
+    y1 = max(0, center_y - RADIUS_PIXELS)
+    x2 = min(frame.shape[1], center_x + RADIUS_PIXELS)
+    y2 = min(frame.shape[0], center_y + RADIUS_PIXELS)
+    
+    # Crop to the bounding box
+    cropped_roi = roi_image[y1:y2, x1:x2]
     
     # Apply edge detection to ROI
-    edges = canny(roi_image)
+    edges = canny(cropped_roi)
+    
+    # Apply the mask to the edges to ensure we only process the circular area
+    cropped_mask = mask[y1:y2, x1:x2]
+    masked_edges = cv2.bitwise_and(edges, edges, mask=cropped_mask)
     
     # Calculate area in ROI
-    pixel_area, contours, area_cm2 = area_calc(edges)
+    pixel_area, contours, area_cm2 = area_calc(masked_edges)
     
     # Draw contours on ROI image
-    contour_image = roi_image.copy()
+    contour_image = cropped_roi.copy()
     cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
     
-    return edges, contour_image, pixel_area, contours, area_cm2
+    return masked_edges, contour_image, pixel_area, contours, area_cm2, (x1, y1, x2-x1, y2-y1)
 
 def setup_directories(test_id):
     """Set up all needed directories"""
@@ -137,7 +214,7 @@ def resize_half(image):
 
 def main(test_id="001"):
     try:
-        # # Set up directories
+        # Set up directories
         dirs = setup_directories(test_id)
         
         # Initialize camera
@@ -168,37 +245,46 @@ def main(test_id="001"):
             for name in ROI_NAMES:
                 header.extend([f'{name}_pixel_area', f'{name}_area_cm2'])
             writer.writerow(header)
+
+        # Use the original ROI centers directly
+        roi_centers = ROI_CENTERS
         
         start_time = time.time()
         
         while True:
-            frame = picam2.capture_array()
+            cal_frame = picam2.capture_array() ##Normal Frame     
+
+            #these two lines are for the callibrated camera (NOT YET WORKING)
+            # frame = picam2.capture_array()
+            # cal_frame = undistort_image(frame) ##calibrated Frame
+    
+
             display_frame = frame.copy()
             
             # Process each ROI
             roi_results = []
-            for i, roi in enumerate(ROIS):
-                x, y, w, h = roi
+            for i, center in enumerate(ROI_CENTERS):
+                center_x, center_y = center
                 
-                # Draw ROI rectangle on display frame
-                cv2.rectangle(display_frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-                cv2.putText(display_frame, ROI_NAMES[i], (x, y-10), 
+                # Draw ROI circle on display frame
+                cv2.circle(display_frame, (center_x, center_y), RADIUS_PIXELS, (255, 0, 0), 2)
+                cv2.putText(display_frame, ROI_NAMES[i], (center_x - RADIUS_PIXELS, center_y - RADIUS_PIXELS - 10), 
                            cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
                 
                 # Process this ROI
-                edges, contour_image, pixel_area, contours, area_cm2 = process_roi(frame, roi)
-                roi_results.append((edges, contour_image, pixel_area, contours, area_cm2))
+                edges, contour_image, pixel_area, contours, area_cm2, roi_box = process_roi(cal_frame, center)
+                roi_results.append((edges, contour_image, pixel_area, contours, area_cm2, roi_box))
                 
                 # Display area info on frame
                 area_text = f"{ROI_NAMES[i]}: {area_cm2:.2f} cm²"
-                cv2.putText(display_frame, area_text, (x, y+h+25),
+                cv2.putText(display_frame, area_text, (center_x - RADIUS_PIXELS, center_y + RADIUS_PIXELS + 25),
                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
             
             # Show main frame with ROI boxes
             cv2.imshow("Main View", display_frame)
             
             # Show separate windows for each ROI's edge detection and contours
-            for i, (edges, contour_image, _, _, _) in enumerate(roi_results):
+            for i, (edges, contour_image, _, _, _, _) in enumerate(roi_results):
                 cv2.imshow(f"ROI {i+1} - {ROI_NAMES[i]} Edges", edges)
                 cv2.imshow(f"ROI {i+1} - {ROI_NAMES[i]} Contours", contour_image)
             
@@ -211,11 +297,11 @@ def main(test_id="001"):
                 
                 # Save main frame with half resolution
                 main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(frame)
+                resized_frame = resize_half(cal_frame)
                 cv2.imwrite(main_img_path, resized_frame)
                 
                 # Save each ROI with half resolution
-                for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
+                for i, (edges, contour_image, pixel_area, _, area_cm2, _) in enumerate(roi_results):
                     edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
                     contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
                     # Resize the images to half size
@@ -225,19 +311,15 @@ def main(test_id="001"):
                     cv2.imwrite(contour_path, resized_pic)
                 
                 print(f"Manually captured at {timestamp}")
-                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
+                for i, (_, _, pixel_area, _, area_cm2, _) in enumerate(roi_results):
                     print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
                     
-
-            # In main loop:
-            current_time = time.time()
-
             # Screenshot capture every 30 minutes
             if current_time - last_screenshot_time >= screenshot_interval:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 # Save main frame
                 main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(frame)
+                resized_frame = resize_half(cal_frame)
                 cv2.imwrite(main_img_path, resized_frame)
                 last_screenshot_time = current_time
                 print(f"Screenshots captured at {timestamp}")
@@ -246,7 +328,7 @@ def main(test_id="001"):
             if current_time - last_roi_time >= roi_interval:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 # Save each ROI
-                for i, (edges, contour_image, pixel_area, _, area_cm2) in enumerate(roi_results):
+                for i, (edges, contour_image, pixel_area, _, area_cm2, _) in enumerate(roi_results):
                     edge_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
                     contour_path = f"roi_images_test{test_id}/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
                     # Resize the taken images from camera
@@ -255,25 +337,26 @@ def main(test_id="001"):
                     cv2.imwrite(edge_path, resized_edge)
                     cv2.imwrite(contour_path, resized_pic)
                 last_roi_time = current_time
-                current_time - last_capture_time >= interval
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                elapsed_time = current_time - start_time
                 
-                # Save ROI data
-                row_data = [timestamp, f"{elapsed_time:.2f}"]
-                
-                # Add each ROI's data to CSV row
-                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
-                    row_data.extend([pixel_area, area_cm2])
-                    print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
-                
-                # Write to CSV
-                with open(csv_file, 'a', newline='') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(row_data)
-                
-                last_capture_time = current_time
-            # nt(f"ROI_Screenshots captured at {timestamp}")
+                # Also capture data for CSV when taking ROI screenshots
+                if current_time - last_capture_time >= interval:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    elapsed_time = current_time - start_time
+                    
+                    # Save ROI data
+                    row_data = [timestamp, f"{elapsed_time:.2f}"]
+                    
+                    # Add each ROI's data to CSV row
+                    for i, (_, _, pixel_area, _, area_cm2, _) in enumerate(roi_results):
+                        row_data.extend([pixel_area, area_cm2])
+                        print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
+                    
+                    # Write to CSV
+                    with open(csv_file, 'a', newline='') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(row_data)
+                    
+                    last_capture_time = current_time
 
             # Data capture for CSV every 10 seconds
             if current_time - last_capture_time >= interval:
@@ -284,7 +367,7 @@ def main(test_id="001"):
                 row_data = [timestamp, f"{elapsed_time:.2f}"]
                 
                 # Add each ROI's data to CSV row
-                for i, (_, _, pixel_area, _, area_cm2) in enumerate(roi_results):
+                for i, (_, _, pixel_area, _, area_cm2, _) in enumerate(roi_results):
                     row_data.extend([pixel_area, area_cm2])
                     print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
                 
@@ -294,7 +377,6 @@ def main(test_id="001"):
                     writer.writerow(row_data)
                 
                 last_capture_time = current_time
-            
             
             if key == ord('q'):
                 break
