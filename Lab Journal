@@ -166,6 +166,22 @@ Date 28/04/25
 
   Research was done to look further into this plan and a start was made to to get the code for pixel intensity working.
 
+Date 29/04/25
+  Today was only coding. This was performed from with the program called pi-connect
+
+  Firstly co-pilot student was installed on the computer. This helps with asking AI for help within the IDE. Then another look was taken at the camera calibration incorperation. However it still could not be fixed. (A check was performed to see if some of the files it tried to acces were empty and
+  that could be why it didn't function. This was not the case)
+
+  The rest of the day pixel_better was tried to be coded. This took far longer than was anticipated. The reason for this was a glitch with the interaction of the ROI and canny edge system, since the edges of the ROI were also seen as edges in the canny edge algorithm. The reason for this was
+  that the maximum area was put too high, lowering this seemed to fix the issue. However this is not a full fix, but more of a bandage. Since I only made it so, that the code does not take edges of too large objects in fame.
+
+  Further more a new heatmap was added to see the visualisation of the the pixel intensities.
+
+  another csv file was made for the readings of the pixel intensities withing the ROI: Avg pixel intensity, max PI, Min Pi
+
+  A new setup was thought of to make most of this function: using an beaker, a round piece of plastic will be hold in place. This be done with a rope or sticks, keeping the place of plastic in place within the beaker. Then using a stirbar to keep the mixture mixed, to have the colour of the mixture 
+  as even as possible.
+
 
 
 
