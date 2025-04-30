@@ -202,6 +202,8 @@ Date 30/04/25
     result do not seem to have a change in pixel intensity. Tests are going to performed today to see if the pixel intensity function performs as it would be expected. This will be done by changing the light level and adding dark objectrs within the ROI
     and looking if the pixel intensity lowers as it would be expected.
 
+  Exp004 data analysis was done
+
 
 
 
