@@ -146,7 +146,7 @@ date 25/04/25
         2. Shape = 'circle' Diameter 21mm,  Width 0.6mm , Area: 365,   Weight 0.22g,
         3. Shape = 'cross', Width (per staff): 5.10, Height(per staff): 30, Width 0.6, area: 106  Weight 0.35g 
         4. Shape = 'Square with Whole', Width: 20, Height: 20, Width 0.6, diameter_in: 9.74, Area:325.34, Weight 0.25g
-        5. shape = 'circle with whole, diameter_o: 21mm, diameter_i = 11.3 , area:  261, weigh 0.16g
+        5. shape = 'donut, diameter_o: 21mm, diameter_i = 11.3 , area:  261, weigh 0.16g
         3. Shape = '#', Width (per staff): 5.10, Height(per staff): 30, Width 0.6, area: 508  Weight 0.47g 
 
     
@@ -186,11 +186,21 @@ Date 29/04/25
     Exp 004 was continued with the new code. Only the circle ROI is being looked at this time. This is done, because it was deemed to be the most accurate shape to observe. 
 
 
+Date 30/04/25
+ Exp 004 was analyzed
+    - cross:       w=0.41g,  d= 0,1g
+    - donut:       w=0.22g,  d= 0.06g
+    - #:           w=0.36g,  d=0.11g
+    - square_hole: w=0.29g,  d=0.04g
+    - square:      w=0.36g,  d=0.05
+    - circle:      w=0.26,   d=0.04
 
+  The result seem to indicate that the plastics have increases in weight, while the readings seem to indicate that the plastics are degrading and dissolving. More tests will be done to see if these readings are accurate. However, i expect
+  that the weight were initially misread.
 
-
-
-
+  Exp 005 was stopped:
+    result do not seem to have a change in pixel intensity. Tests are going to performed today to see if the pixel intensity function performs as it would be expected. This will be done by changing the light level and adding dark objectrs within the ROI
+    and looking if the pixel intensity lowers as it would be expected.
 
 
 
