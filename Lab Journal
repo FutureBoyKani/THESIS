@@ -18,7 +18,6 @@ Date 27/03/25
 
 
 
-
 Date 28/03/25
 
 
@@ -204,8 +203,26 @@ Date 30/04/25
 
   Exp004 data analysis was done
 
+date 01/04/25
+  The powerpoint was made for thesis proposal and text.
 
 
+
+date 02/04/25
+  A new setup was thought of. making a plastic circle with a whole in the smaller circular middle. Plasing a glass pipette in the whole, that keeps the plastic in place. Then placing this plastic with pipette in a glass beaker filled with ethyl acetate with a stirring rod, that keeps the solution stirred.
+
+  exp006 was started:
+    The new setup: this looks at area size and pixel intensity at the same time. This was left in over the weekend.
+
+date 05/05/25
+  Exp006 was ended:
+    The new setup does not seem to work: plastic curls up even more. This can be improve maybe some of the following point
+        - If the printer is used, put the plastic in a oven, so that it melts the printed line structure; This line structure causes internal stresses that keep make the plastic piece curlp up or use a solid piece of plastic, that is cut by the laser cutter.
+        - Don't use the area calculation anymore, only look at the pixel intensity
+
+  exp007 started:
+      The second point was used. Small pieces of plastic were placed in a petri dish, then this was covered with ethyll acetate and a stirring rod was plased in. Now we only take a look at the pixel intensity, since if the plastic dissolved in the solution, the pixel intensity will change, since the plastic is colored. This 
+      experimetn will be left in for 2 days. In the meanwhile I will do more research for other possible methods of copmuter vision.
 
 
 
