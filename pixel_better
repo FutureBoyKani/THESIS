@@ -6,7 +6,9 @@ import os
 import datetime
 import csv
 
-PIXELS_PER_METER = 24094   # Calculate your pixels per meter
+DETECTION_MODE = "canny"  # Global variable to track detection mode
+
+PIXELS_PER_METER = 38043    # Calculate your pixels per meter
 
 # Load calibration parameters from NPZ file
 calibration_path = 'camera_calibration.npz'
@@ -14,8 +16,8 @@ calibration_data = np.load(calibration_path)
 camera_matrix = calibration_data['camera_matrix']
 dist_coeffs = calibration_data['dist_coeffs']
 
-# Convert 4 cm diameter to pixel radius
-CM_DIAMETER = 3
+# Convert x cm diameter to pixel radius
+CM_DIAMETER = 4
 RADIUS_PIXELS = int((CM_DIAMETER / 2) * PIXELS_PER_METER / 100)  # Convert cm to meters, then to pixels
 
 # Define your regions of interest (ROIs) as center points (x, y)
@@ -25,12 +27,12 @@ ROI_CENTERS = [
     # (1850, 500),     # ROI 2: center point
     # (3350, 500),     # ROI 3: center point
     # (450, 1775),    # ROI 4: center point
-    # (1850, 1775),     # ROI 5: center point
-    (3350, 1775)
+    (1850, 1100)     # ROI 5: center point
+    # (3350, 1775)
 ]
 
 # ROI names remain the same
-ROI_NAMES = ["Shape 1"]
+ROI_NAMES = ["Pixel_intensity_plaBeads"]
 
 
 def calculate_intensity_metrics(roi_image):
@@ -134,7 +136,7 @@ def connect_edges_multi_kernel(edges):
         result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, kernel)
     return result
 
-def canny(image, low_threshold=85, high_threshold=105, aperture_size=3):
+def canny(image, low_threshold=120, high_threshold=170, aperture_size=3):
     # Make a copy of the original image
     original = image.copy()
     
@@ -151,7 +153,7 @@ def canny(image, low_threshold=85, high_threshold=105, aperture_size=3):
     connected_edges = connect_edges_multi_kernel(edges)
     return connected_edges
 
-def area_calc(connected_edges, min_area=9912, max_area=236665):
+def area_calc(connected_edges, min_area=100, max_area=23605):
     """
     Calculate the total area of regions enclosed by connected edges.
     
@@ -166,8 +168,8 @@ def area_calc(connected_edges, min_area=9912, max_area=236665):
     # Create a copy of the connected edges
     edges_copy = connected_edges.copy()
 
-    contours, _ = cv2.findContours(edges_copy, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-    # cv2.RETR_EXTERNAL
+    contours, _ = cv2.findContours(edges_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.RETR
     
     significant_contours = []
     total_area = 0
@@ -214,8 +216,9 @@ def process_roi(frame, roi_center):
     # Calculate intensity metrics from the masked ROI
     intensity_matrix, avg_intensity, std_intensity, min_intensity, max_intensity = calculate_intensity_metrics(masked_edges)
     
-    # Apply edge detection to masked ROI
-    edges = canny(masked_edges)
+    # Apply edge detection to masked ROI - store both raw edges and connected edges
+    raw_edges = canny(masked_edges)  # Store the raw Canny edges
+    edges = connect_edges_multi_kernel(raw_edges)  # Connect the edges for area calculation
     
     # Calculate area in ROI
     pixel_area, contours, area_cm2 = area_calc(edges)
@@ -224,37 +227,39 @@ def process_roi(frame, roi_center):
     contour_image = masked_edges.copy()
     cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
     
-    return masked_edges, contour_image, pixel_area, contours, area_cm2, (x1, y1, x2-x1, y2-y1), intensity_matrix, avg_intensity, std_intensity, min_intensity, max_intensity
+    return raw_edges, contour_image, pixel_area, contours, area_cm2, (x1, y1, x2-x1, y2-y1), intensity_matrix, avg_intensity, std_intensity, min_intensity, max_intensity
 
 def setup_directories(test_id):
-    """Set up all needed directories with subdirectories for each ROI image type"""
-    base_dirs = [
-        f"pi_timelapse_images_test{test_id}",
-        f"Area_CSV_file_test{test_id}",
-        f"Intensity_CSV_file_test{test_id}",
-        f"Intensity_Matrix_test{test_id}",
-    ]
+    """Set up all needed directories within a test-specific directory"""
+    # Get test name from user
+    test_name = input("Enter test name: ")
     
-    # Create ROI subdirectories for different image types
-    roi_base = f"roi_images_test{test_id}"
-    roi_subdirs = [
-        f"{roi_base}/edges",
-        f"{roi_base}/contours",
-        f"{roi_base}/intensity"
+    # Create main test directory with test name
+    test_dir = f"{test_name}_test_{test_id}"
+    
+    # Define subdirectories within the test directory
+    subdirs = [
+        "images/pi_timelapse",
+        "images/roi/edges",
+        "images/roi/contours", 
+        "images/roi/intensity",
+        "data/csv",
+        "data/intensity_matrix"
     ]
     
     # Create all directories
-    for directory in base_dirs + roi_subdirs:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+    for subdir in subdirs:
+        full_path = os.path.join(test_dir, subdir)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
             
-    return base_dirs + roi_subdirs
+    return test_dir, test_name
 
-# Add this function to resize an image to half its size
-def resize_half(image):
-    """Resize an image to half its original dimensions"""
+# Replace the resize_half function with resize_quarter
+def resize_quarter(image):
+    """Resize an image to quarter of its original dimensions"""
     h, w = image.shape[:2]
-    return cv2.resize(image, (w//2, h//2))
+    return cv2.resize(image, (w//4, h//4))
 
 def visualize_intensity(intensity_matrix, window_name):
     """
@@ -294,12 +299,12 @@ def visualize_intensity(intensity_matrix, window_name):
 
 def main(test_id="001"):
     try:
-        # Set up directories
-        dirs = setup_directories(test_id)
+        # Set up directories and get base test directory
+        test_dir, test_name = setup_directories(test_id)
         
-        # Create CSV files with headers
-        area_csv_file = os.path.join(f"Area_CSV_file_test{test_id}", f"Area_cm2_multi_roi_test{test_id}.csv")
-        intensity_csv_file = os.path.join(f"Intensity_CSV_file_test{test_id}", f"intensity_metrics_test{test_id}.csv")
+        # Update CSV file paths
+        area_csv_file = os.path.join(test_dir, "data/csv", f"{test_name}_area_metrics.csv")
+        intensity_csv_file = os.path.join(test_dir, "data/csv", f"{test_name}_intensity_metrics.csv")
         
         # Setup area CSV
         with open(area_csv_file, 'w', newline='') as f:
@@ -334,9 +339,16 @@ def main(test_id="001"):
         last_roi_time = 0 
         
         picam2.start()
-        picam2.set_controls({"LensPosition": 3})
+        lens_position =2.8  # Initial lens position for objects ~5cm away
+        lens_step = 0.05     # Smaller step size for finer control
+        picam2.set_controls({"LensPosition": lens_position})
+
+        print("Starting edge detection. Controls:")
+        print("'q' - quit")
+        print("'s' - save current frame")
+        print("'+' - increase focus")
+        print("'-' - decrease focus")
         time.sleep(2)
-        print("Starting edge detection. Press 'q' to quit, 's' to save current frame.")
         
         # Use the original ROI centers directly
         roi_centers = ROI_CENTERS
@@ -376,83 +388,94 @@ def main(test_id="001"):
 
             # Resize display frame to 1080p for smoother display
             display_frame = cv2.resize(display_frame, (1920, 1080))
-            
+
             # Show main frame with ROI boxes
             cv2.imshow("Main View", display_frame)
-            
-            # Show separate windows for each ROI's edge detection and contours
-            for i, (edges, contour_image, _, _, _, _) in enumerate(roi_results):
+
+            # Show windows for each ROI's edges, contours and intensity
+            for i, (raw_edges, contour_image, _, _, _, _) in enumerate(roi_results):
                 # Resize ROI windows for display
-                display_edges = cv2.resize(edges, (edges.shape[1]//2, edges.shape[0]//2))
+                display_edges = cv2.resize(raw_edges, (raw_edges.shape[1]//2, raw_edges.shape[0]//2))
                 display_contours = cv2.resize(contour_image, (contour_image.shape[1]//2, contour_image.shape[0]//2))
-                cv2.imshow(f"ROI {i+1} - {ROI_NAMES[i]} Edges", display_edges)
-                cv2.imshow(f"ROI {i+1} - {ROI_NAMES[i]} Contours", display_contours)
-            
+                
+                # Show raw Canny edges and contour visualization
+                cv2.imshow(f"ROI {i+1} - {ROI_NAMES[i]} Canny Edges", display_edges)
+                cv2.imshow(f"ROI {i+1} - {ROI_NAMES[i]} Detected Contours", display_contours)
+
             # Show and save intensity visualizations
             if current_time - last_roi_time >= roi_interval:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.datetime.now().strftime("%H_%M_%S")
                 for i, (intensity_matrix, _, _, _, _) in enumerate(intensity_results):
-                    # Create intensity visualization
+                    # Create and show intensity visualization
                     heatmap = visualize_intensity(intensity_matrix, f"ROI {i+1} - {ROI_NAMES[i]} Intensity")
                     
                     # Save intensity visualization
-                    intensity_path = f"roi_images_test{test_id}/intensity/{ROI_NAMES[i]}_intensity_{timestamp}.jpg"
-                    resized_intensity = resize_half(heatmap)
+                    intensity_path = os.path.join(test_dir, "images/roi/intensity", f"{timestamp}_ROI_{i+1}_intensity.jpg")
+                    resized_intensity = resize_quarter(heatmap)
                     cv2.imwrite(intensity_path, resized_intensity)
             
             current_time = time.time()
             key = cv2.waitKey(1) & 0xFF
             
-            # Manual capture with 's' key
-            if key == ord('s'):
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Handle key presses
+            if key == ord('q'):
+                break
+            elif key == ord('s'):
+                timestamp = datetime.datetime.now().strftime("%H_%M_%S")
                 
                 # Save main frame with half resolution
-                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(cal_frame)
+                main_img_path = os.path.join(test_dir, "images/pi_timelapse", f"{timestamp}_main.jpg")
+                resized_frame = resize_quarter(cal_frame)
                 cv2.imwrite(main_img_path, resized_frame)
                 
                 # Save each ROI with half resolution
                 for i, (edges, contour_image, pixel_area, _, area_cm2, _) in enumerate(roi_results):
-                    edge_path = f"roi_images_test{test_id}/edges/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
-                    contour_path = f"roi_images_test{test_id}/contours/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
+                    edge_path = os.path.join(test_dir, "images/roi/edges", f"{timestamp}_ROI_{i+1}_edges.jpg")
+                    contour_path = os.path.join(test_dir, "images/roi/contours", f"{timestamp}_ROI_{i+1}_contours.jpg")
                     # Resize the images to half size
-                    resized_edge = resize_half(edges)
-                    resized_pic = resize_half(contour_image)
+                    resized_edge = resize_quarter(edges)
+                    resized_pic = resize_quarter(contour_image)
                     cv2.imwrite(edge_path, resized_edge)
                     cv2.imwrite(contour_path, resized_pic)
                 
                 print(f"Manually captured at {timestamp}")
                 for i, (_, _, pixel_area, _, area_cm2, _) in enumerate(roi_results):
                     print(f"{ROI_NAMES[i]}: {pixel_area:.2f} px | {area_cm2:.2f} cm²")
+            # In the key handling section:
+            elif key == ord('+') or key == ord('='):
+              lens_position = min(10.0, lens_position + lens_step)
+              picam2.set_controls({"LensPosition": lens_position})
+              print(f"Lens position: {lens_position:.2f}")
+            elif key == ord('-') or key == ord('_'):
+              lens_position = max(0.0, lens_position - lens_step)
+              picam2.set_controls({"LensPosition": lens_position})
+              print(f"Lens position: {lens_position:.2f}")
                     
             # Screenshot capture every 30 minutes
             if current_time - last_screenshot_time >= screenshot_interval:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                # Save main frame
-                main_img_path = f"pi_timelapse_images_test{test_id}/main_{timestamp}.jpg"
-                resized_frame = resize_half(cal_frame)
+                timestamp = datetime.datetime.now().strftime("%H_%M_%S")
+                main_img_path = os.path.join(test_dir, "images/pi_timelapse", f"{timestamp}_main.jpg")
+                resized_frame = resize_quarter(cal_frame)
                 cv2.imwrite(main_img_path, resized_frame)
                 last_screenshot_time = current_time
                 print(f"Screenshots captured at {timestamp}")
 
             # Take screenshots of ROI
             if current_time - last_roi_time >= roi_interval:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                # Save each ROI
+                timestamp = datetime.datetime.now().strftime("%H_%M_%S")
                 for i, (edges, contour_image, pixel_area, _, area_cm2, _) in enumerate(roi_results):
-                    edge_path = f"roi_images_test{test_id}/edges/{ROI_NAMES[i]}_edges_{timestamp}.jpg"
-                    contour_path = f"roi_images_test{test_id}/contours/{ROI_NAMES[i]}_contours_{timestamp}.jpg"
+                    edge_path = os.path.join(test_dir, "images/roi/edges", f"{timestamp}_ROI_{i+1}_edges.jpg")
+                    contour_path = os.path.join(test_dir, "images/roi/contours", f"{timestamp}_ROI_{i+1}_contours.jpg")
                     # Resize the taken images from camera
-                    resized_edge = resize_half(edges)
-                    resized_pic = resize_half(contour_image)
+                    resized_edge = resize_quarter(edges)
+                    resized_pic = resize_quarter(contour_image)
                     cv2.imwrite(edge_path, resized_edge)
                     cv2.imwrite(contour_path, resized_pic)
                 last_roi_time = current_time
                 
                 # Also capture data for CSV when taking ROI screenshots
                 if current_time - last_capture_time >= interval:
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    timestamp = datetime.datetime.now().strftime("%H_%M_%S")
                     elapsed_time = current_time - start_time
                     
                     # Save ROI data
@@ -472,7 +495,7 @@ def main(test_id="001"):
 
             # Data capture for CSV every 10 seconds
             if current_time - last_capture_time >= interval:
-                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.datetime.now().strftime("%H_%M_%S")
                 elapsed_time = current_time - start_time
                 
                 # Save area data
@@ -488,8 +511,9 @@ def main(test_id="001"):
                 # Save intensity matrices to separate files
                 for i, (intensity_matrix, _, _, _, _) in enumerate(intensity_results):
                     matrix_filename = os.path.join(
-                        f"Intensity_Matrix_test{test_id}", 
-                        f"{ROI_NAMES[i]}_matrix_{timestamp}.npy"
+                        test_dir,
+                        "data/intensity_matrix",
+                        f"{timestamp}_ROI_{i+1}_matrix.npy"
                     )
                     np.save(matrix_filename, intensity_matrix)
                 
@@ -516,3 +540,6 @@ def main(test_id="001"):
 if __name__ == "__main__":
     test_id = input("Enter test ID (e.g., 001): ")
     main(test_id)
+
+
+
