@@ -220,11 +220,38 @@ date 05/05/25
         - If the printer is used, put the plastic in a oven, so that it melts the printed line structure; This line structure causes internal stresses that keep make the plastic piece curlp up or use a solid piece of plastic, that is cut by the laser cutter.
         - Don't use the area calculation anymore, only look at the pixel intensity
 
+  Rest of the day was spend discussing and thinking about how to improve this test and maybe still be able to use the area calculation somehow.
+
+
+date 06/05/25
   exp007 started:
       The second point was used. Small pieces of plastic were placed in a petri dish, then this was covered with ethyll acetate and a stirring rod was plased in. Now we only take a look at the pixel intensity, since if the plastic dissolved in the solution, the pixel intensity will change, since the plastic is colored. This 
       experimetn will be left in for 2 days. In the meanwhile I will do more research for other possible methods of copmuter vision.
 
+date 07/05/25
+    Exp 007 was continued
+  ``More research was done in what the opencv packet contains and how to code it possibly better. For the website of openCV was looked at and some youtube videos explaining the coding functions were looked at
 
+
+date 08/05/25
+    Exp 007 was ended:
+      gotten no results from the experiment. This was due to the probably the stirring bar. Since the stirring made the plastic pieces diluted in the solvend, which caused the solution to not change color. Resulting in the camera not seeing a different 
+      pixel intensity. However we have concluded that it did dilute, since under the lightmictroscope the liquid was filled with microplastics.
+
+    Further I reconned that it might be possible to conclude that a piece of plastic is dissolving by looking at the amount of pure black pixels (or any color of the plastic). This could be done by looking at the contours of the normal image or
+    turning the image into black and white and setting the contrast very high with a treshold that only shows the real black pixels. The code was written for this: in the code only looks at a certain picture and transforms that picture into black and white
+    then it counts the pixels. It does this for both the contour of normal image, canny image and black and white image. The code could easilty be transformd into a pi-camera video functino
+
+    This coude still suffers from the same problem as the the area function. As the plastic can still curl up and deform, changing the amound of black pixels the computer sees. To help this, the palstic needs to be hold in place. With either glueing it 
+    to the petri dish or making the plastic solid, so that it does not deform.
+
+date 09/05/25
+    Exp 008 was started:
+      Same as exp 007, however instead of plastic beads, cut directly of the filament. This time I use a cut up plastic shapes from the previous experiments that were not used. These are arount 0.5-1mm thick. This might help dissolving them better 
+      in the ethyl acetate, so that the pixel intensity can be measured, or so I hope. To be sure, I will run 2 petri disches in the experiment. One with a stirrer and one without. Since I am sure that in the petridish without a stirrer a plastic cloud will
+      form.
+
+    The code from yesterday was further improved and put in the github file.
 
 
 
