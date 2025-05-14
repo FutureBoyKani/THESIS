@@ -299,8 +299,14 @@ Date 14/04/25
           - 0.5g PVB in 20mL ispropanol
           - 0.6g PVB in 20mL ispropanol
           - 0.8g PVB in 20mL ispropanol
-          - 0.8g PVB in 20mL ispropanol
+          - 0.9g PVB in 20mL ispropanol
           - 1g PVB in 20mL ispropanol
+
+    After this the calibration curve was made. This can be seen under the file of calibration_curve in the github file. Doing this it was discovered that the concentration beweteen 0.05-0.4 g/20ml were the best. So a concentration of:
+
+          0.0025-0.02 g/ml
+
+    Is best to use for this experiment.
 
 
   
