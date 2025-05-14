@@ -256,8 +256,51 @@ date 09/05/25
 
 
 
+date 12/04/25
+    Had a conversation with Vittorio about the project. 
+        The projects I am working on now has been changed. Now I will use my code to continue another reasearch. This is about measuring the dissolving time of a plastic structure. The plastics here is colored and will leave a color in the solvent. Then this color change will be measured in pixel intensity. This is done by using the same code
+        as was used before, only with the area detection removed and only looking pixel intensity.
+
+        the plastic being used in this experiment is called PVB. Our plastic has a yellow color. This plastic will be dissolved in isopropanol.
+        Before starting the experiment, a calibration curve needed to be made, so that we can know what the limitations are of the picamera
 
 
+    Today plastic was left to dissolve in isopropanol. This was done using a rotator. The amounts left to dissolve were:
+
+          - 0.1g PVB in 20mL ispropanol
+          - 0.2g PVB in 20mL ispropanol
+          - 0.4g PVB in 20mL ispropanol
+          - 0.6g PVB in 20mL ispropanol
+          - 0.8g PVB in 20mL ispropanol
+          - 1g PVB in 20mL ispropanol
+
+date 13/04/25
+    Coming back it was noticed that all the PVB was luckily dissolved overnight. Seeing this I decided to dissolve more. These amounts were:
+          - 1.2g PVB in 20mL ispropanol
+          - 1.4g PVB in 20mL ispropanol
+          - 1.6g PVB in 20mL ispropanol
+          - 1.8g PVB in 20mL ispropanol
+
+    With the dissolved plastics from the day before a calibration test was done. This was done by putting the liquids, in their plastic container next to eachoter, with a light pad behind them and measuring the pixel intensity.
+
+    The plastic pieces needed for the experiment were printed out.
+
+Date 14/04/25
+    After discussing with a collegue in the lab. It was decided that the calibraion curve experiment done yesterday was not good enough. Firstly the solutions were kept in their plastic holders. These plastic braek the light differently than glass. Which would be
+    used in the main experiment. So the results were not accurate. Also the plastic containers had blue caps, which reflected into the liquid, due the the effect of the lightpad behind the plastic container altering the results. Now in the exp009, 
+    glass vials were used and the experiments was done one measurment at a time, to keep all the measurments as constant as possible. The following conentrations were used:
+
+
+          - 0.05g PVB in 20mL ispropanol     
+          - 0.1g PVB in 20mL ispropanol
+          - 0.2g PVB in 20mL ispropanol
+          - 0.3g PVB in 20mL ispropanol
+          - 0.4g PVB in 20mL ispropanol
+          - 0.5g PVB in 20mL ispropanol
+          - 0.6g PVB in 20mL ispropanol
+          - 0.8g PVB in 20mL ispropanol
+          - 0.8g PVB in 20mL ispropanol
+          - 1g PVB in 20mL ispropanol
 
 
   
