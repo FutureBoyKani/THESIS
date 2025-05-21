@@ -321,7 +321,50 @@ Date 15/04/25
         Fast Dissolving plastic piece of 1.06 grams was put in a container with 100ml of isopropanol. The roi was put above the the stir bar. The roi was one long rectangle.
 
     It was testet to see if the container would no melt with the isopromapol: This seemed to be the case.
+
+
+Date 16/04/25
+    The experiment was not finished yet. So it was decided to keep it running over the weekend.
     
+
+Date 19/04/25
+    In the meeting with Vittorio and Xiangyu that it was necessary to change my setup up once again. This time I was to use a cuvet that xiangyu thought up. This is triangular cuvet with differing length path. This would enaple the pi camera to be 
+    saturated less quickly and could see a wider range.
+
+    The rest of the day Xiangyu explained the theory behind the new cuvet and explained how to analyse the DNG(RAW) pictures. However I was thinking of another way to do this. Instead of manually doing the analysis, I would set up the ROI 
+
+Date 20/04/25
+    Day was spend working on the code, that let's me take a collumn of 1 pixel with a certain height. Then it calculates the pixel intensity of each red, green and yellow colored collumn in the row. However this was failed, since I did not manage to succeed the whole day.
+
+Date 21/04/26
+    A 3d printed black box was made, where the triangular cuvet could be hold in place and the camera could be directly placed on top.
+
+    The code I was working on yesterday was continued. However I changed the idea behind it. Instead of creating a collumn of one pixel thick. I would make multiple ROI's withing the see trough area. Than assign a thickness to those ROI's and take the average color
+    intensity of the RGB values. This in theory is less acurate, however it seems to be much easier to code in. However after spending multiple hours, I could not get the code to work with RAW camera format. So I need more time to look into this or to do the measurments,
+    in normal video format and not raw. Which would then again be less acurate.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   
   
