@@ -1,0 +1,306 @@
+import cv2
+import numpy as np
+from picamera2 import Picamera2, Preview
+from picamera2.encoders import Quality
+import time
+import os
+import datetime
+import csv
+
+
+
+# HSV color ranges
+lower_red1 = np.array([0, 100, 100])
+upper_red1 = np.array([10, 255, 255])
+lower_red2 = np.array([160, 100, 100])
+upper_red2 = np.array([180, 255, 255])
+
+lower_green = np.array([40, 100, 100])
+upper_green = np.array([80, 255, 255])
+
+lower_yellow = np.array([20, 100, 100])
+upper_yellow = np.array([35, 255, 255])
+
+
+
+# Define your regions of interest (ROIs) as center points (x, y)
+# Format: [(center_x, center_y), ...]
+ROI_SMALL = [
+    (1920, 1080)  # Center of 4K frame (3840x2160)
+]
+
+ROI_LARGE = [
+    (1920, 1080)  # Center of 4K frame (3840x2160)
+]
+
+# ROI names
+ROI_NAMES = ["a"]
+
+# Rename width/height constants
+ROI_SMALL_WIDTH = 500  # Width of small rectangle in pixels
+ROI_SMALL_HEIGHT = 500  # Height of small rectangle in pixels
+
+ROI_LARGE_WIDTH = 1000  # Width of large rectangle in pixels
+ROI_LARGE_HEIGHT = 1000  # Height of large rectangle in pixels
+
+
+
+def calculate_color_intensity_metrics(image):
+    # Define color ranges for Red, Green, and Yellow in HSV space
+    # Note: These ranges may need tuning based on your specific images
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+   
+    # HSV ranges for each color
+    # Red wraps around the hue spectrum, so we need two ranges
+
+   
+    # Create masks for each color
+    red_mask1 = cv2.inRange(hsv_image, lower_red1, upper_red1)
+    red_mask2 = cv2.inRange(hsv_image, lower_red2, upper_red2)
+    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+   
+    green_mask = cv2.inRange(hsv_image, lower_green, upper_green)
+    yellow_mask = cv2.inRange(hsv_image, lower_yellow, upper_yellow)
+   
+    # Convert image to grayscale for intensity analysis
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+   
+    # Dictionary to store results
+    results = {}
+   
+    # Process each color mask
+    for color_name, mask in [("Red", red_mask), ("Green", green_mask), ("Yellow", yellow_mask)]:
+        # Count non-zero pixels in the mask (THIS LINE WAS MISSING)
+        non_zero_pixels = cv2.countNonZero(mask)
+       
+        if non_zero_pixels > 0:
+            # Apply mask to grayscale image to get intensity values for this color
+            masked_image = cv2.bitwise_and(gray_image, gray_image, mask=mask)
+            raw_values = masked_image[mask > 0]
+           
+            # Calculate metrics
+            avg_intensity = np.mean(raw_values)
+            std_intensity = np.std(raw_values)
+            min_intensity = np.min(raw_values)
+            max_intensity = np.max(raw_values)
+        else:
+            avg_intensity = std_intensity = min_intensity = max_intensity = 0
+       
+        # Store results for this color
+        results[color_name] = {
+            "average_intensity": avg_intensity,
+            "std_intensity": std_intensity,
+            "min_intensity": min_intensity,
+            "max_intensity": max_intensity
+        }
+   
+    return results
+
+def process_roi(raw_array, roi_center):
+    """Process ROI using RAW data"""
+    center_x, center_y = roi_center
+   
+    # Calculate rectangle boundaries
+    x1 = max(0, center_x - ROI_SMALL_WIDTH//2)
+    y1 = max(0, center_y - ROI_SMALL_HEIGHT//2)
+    x2 = min(raw_array.shape[1], center_x + ROI_SMALL_WIDTH//2)
+    y2 = min(raw_array.shape[0], center_y + ROI_SMALL_HEIGHT//2)
+   
+    # Extract the ROI
+    roi = raw_array[y1:y2, x1:x2]
+    
+    # Create a mask for the rectangular ROI
+    mask = np.zeros(raw_array.shape[:2], dtype=np.uint8)
+    cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+    
+    # Apply mask to get masked ROI
+    masked_roi = cv2.bitwise_and(raw_array, raw_array, mask=mask)
+    
+    # Convert to HSV for color analysis
+    hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    
+    # Create color masks for the entire ROI
+    red_mask1 = cv2.inRange(hsv_roi, lower_red1, upper_red1)
+    red_mask2 = cv2.inRange(hsv_roi, lower_red2, upper_red2)
+    red_mask = cv2.bitwise_or(red_mask1, red_mask2)
+    green_mask = cv2.inRange(hsv_roi, lower_green, upper_green)
+    yellow_mask = cv2.inRange(hsv_roi, lower_yellow, upper_yellow)
+    
+    # Calculate intensities for each color
+    red_intensity = np.mean(roi[red_mask > 0]) if np.any(red_mask > 0) else 0
+    green_intensity = np.mean(roi[green_mask > 0]) if np.any(green_mask > 0) else 0
+    yellow_intensity = np.mean(roi[yellow_mask > 0]) if np.any(yellow_mask > 0) else 0
+    
+    # Store color profiles
+    color_profiles = (red_intensity, green_intensity, yellow_intensity)
+    
+    return (
+        masked_roi, 
+        (x1, y1, x2-x1, y2-y1),
+        color_profiles,  # Color intensities
+        None, None, None, None  # Maintaining return signature for compatibility
+    )
+
+
+def process_roi_large(frame, roi_large):
+    """Process a single large rectangular region of interest"""
+    center_x, center_y = roi_large
+
+    # Calculate rectangle boundaries
+    x1 = max(0, center_x - ROI_LARGE_WIDTH//2)
+    y1 = max(0, center_y - ROI_LARGE_HEIGHT//2)
+    x2 = min(frame.shape[1], center_x + ROI_LARGE_WIDTH//2)
+    y2 = min(frame.shape[0], center_y + ROI_LARGE_HEIGHT//2)
+
+    mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+    cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+    masked_roi = cv2.bitwise_and(frame, frame, mask=mask)
+
+    return masked_roi, (x1, y1, x2-x1, y2-y1)
+
+
+def setup_directories(test_id):
+    """Set up all needed directories within a test-specific directory"""
+    test_name = input("Enter test name: ")
+    
+    test_dir = f"{test_name}_test_{test_id}"
+    
+    subdirs = [
+        "images/pi_timelapse",
+        "images/roi/small",
+        "images/roi/large"
+    ]
+    
+    for subdir in subdirs:
+        full_path = os.path.join(test_dir, subdir)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+            
+    return test_dir, test_name
+
+def main(test_id="001"):
+    try:
+        # Set up directories
+        test_dir, test_name = setup_directories(test_id)
+        
+        # Initialize camera with RAW configuration
+        picam2 = Picamera2()
+        capture_config = picam2.create_still_configuration(
+            raw={"size": picam2.sensor_resolution},
+            main={"size": (3840, 2160)},
+            controls={"AfMode": 0}
+        )
+        preview_config = picam2.create_preview_configuration()
+        picam2.configure(preview_config)
+        
+        # Setup CSV file for intensity data
+        intensity_csv_file = os.path.join(test_dir, "data/csv", f"{test_name}_intensity_metrics.csv")
+        os.makedirs(os.path.dirname(intensity_csv_file), exist_ok=True)
+        
+        with open(intensity_csv_file, 'w', newline='') as f:
+            writer = csv.writer(f)
+            header = ['timestamp', 'elapsed_time']
+            for name in ROI_NAMES:
+                header.extend([f'{name}_red', f'{name}_green', f'{name}_yellow'])
+            writer.writerow(header)
+        
+        # Initialize timing variables
+        interval = 2  # Capture every 2 seconds
+        last_capture_time = 0
+        roi_interval = 60  # Save ROI images every minute
+        last_roi_time = 0
+        
+        picam2.start()
+        start_time = time.time()
+        
+        print("Starting capture. Press 'q' to quit, 's' for manual capture")
+        
+        while True:
+            current_time = time.time()
+            
+            # Capture frame in RAW format
+            request = picam2.switch_mode_and_capture_request(capture_config)
+            raw_array = request.make_array("raw")
+            display_frame = request.make_array("main")
+            
+            # Process ROIs
+            for i, center in enumerate(ROI_SMALL):
+                # Draw ROI on display frame
+                cv2.rectangle(display_frame,
+                            (center[0] - ROI_SMALL_WIDTH//2, center[1] - ROI_SMALL_HEIGHT//2),
+                            (center[0] + ROI_SMALL_WIDTH//2, center[1] + ROI_SMALL_HEIGHT//2),
+                            (0, 255, 0), 2)
+                
+                # Process ROI using RAW data
+                masked_roi, roi_rect, color_profiles, *_ = process_roi(raw_array, center)
+                
+                # Save ROI data at intervals
+                if current_time - last_roi_time >= roi_interval:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    roi_path = os.path.join(test_dir, "images/roi/small", 
+                                          f"{timestamp}_ROI_{ROI_NAMES[i]}.dng")
+                    request.save_dng(roi_path, masked_roi)
+            
+            # Process and save large ROIs
+            for i, center in enumerate(ROI_LARGE):
+                # Draw large ROI
+                cv2.rectangle(display_frame,
+                            (center[0] - ROI_LARGE_WIDTH//2, center[1] - ROI_LARGE_HEIGHT//2),
+                            (center[0] + ROI_LARGE_WIDTH//2, center[1] + ROI_LARGE_HEIGHT//2),
+                            (255, 0, 0), 2)
+                
+                masked_roi, roi_rect = process_roi_large(raw_array, center)
+                
+                if current_time - last_roi_time >= roi_interval:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    roi_path = os.path.join(test_dir, "images/roi/large", 
+                                          f"{timestamp}_ROI_large_{ROI_NAMES[i]}.dng")
+                    request.save_dng(roi_path, masked_roi)
+            
+            if current_time - last_roi_time >= roi_interval:
+                last_roi_time = current_time
+            
+            # Save data at regular intervals
+            if current_time - last_capture_time >= interval:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                
+                # Save full RAW frame
+                raw_path = os.path.join(test_dir, "images/pi_timelapse", f"{timestamp}_main.dng")
+                request.save_dng(raw_path)
+                
+                # Save intensity data
+                with open(intensity_csv_file, 'a', newline='') as f:
+                    writer = csv.writer(f)
+                    row = [timestamp, f"{current_time - start_time:.2f}"]
+                    for _, _, color_profiles, *_ in [process_roi(raw_array, center) for center in ROI_SMALL]:
+                        row.extend(color_profiles)
+                    writer.writerow(row)
+                
+                last_capture_time = current_time
+            
+            # Display frame
+            display_frame = cv2.resize(display_frame, (1920, 1080))
+            cv2.imshow("Main View", display_frame)
+            
+            # Handle key presses
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                break
+            elif key == ord('s'):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                manual_path = os.path.join(test_dir, "images/pi_timelapse", f"{timestamp}_manual.dng")
+                request.save_dng(manual_path)
+                print(f"Manual capture saved: {manual_path}")
+            
+            request.release()
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        picam2.stop()
+        cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()
