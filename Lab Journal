@@ -336,12 +336,36 @@ Date 19/04/25
 Date 20/04/25
     Day was spend working on the code, that let's me take a collumn of 1 pixel with a certain height. Then it calculates the pixel intensity of each red, green and yellow colored collumn in the row. However this was failed, since I did not manage to succeed the whole day.
 
-Date 21/04/26
+Date 21/04/25
     A 3d printed black box was made, where the triangular cuvet could be hold in place and the camera could be directly placed on top.
 
     The code I was working on yesterday was continued. However I changed the idea behind it. Instead of creating a collumn of one pixel thick. I would make multiple ROI's withing the see trough area. Than assign a thickness to those ROI's and take the average color
     intensity of the RGB values. This in theory is less acurate, however it seems to be much easier to code in. However after spending multiple hours, I could not get the code to work with RAW camera format. So I need more time to look into this or to do the measurments,
     in normal video format and not raw. Which would then again be less acurate.
+
+Date 22/04/25
+    The printed box had failed. Started the print once again. 
+
+    Today Tried again to get the average intensity of RGB colours inside a row. However, after discussing this with xiangyu, I was told that this was inpossible to do for a raw image file. Thus after trying to code this, I decided to abandon the idea and instead 
+    Use the method of first taking the picture in DNG format and then having the code look at that picture.
+
+
+Date 23/04/25
+    3D printed box height was too small (7cm), decided to redisign to box to be 12cm high in the hopes that this would be enough. 
+
+    The rest of the day I wrote 2 small codes. One that takes a DNG RAW image when pressing the key 's' and one that allows me to look at the DNG image. This codes will be used as a starter format for the automatisation and the images taking from this code
+    will be used for making the calibration curve.
+
+    Did the data analysis of EXP10. Where the the fast dissolving plastic structure of PVB was dissolved in aceton.
+
+Date 23/04/25
+    A code was tried to be written so that the DNG image was cropped automatically where the Flow Cell was. However this failed, since the code was too difficult to wright for me in a short time. So it was decided to make the calibration curve as xiangyu did.\
+    This was by manually cropping the image and doing the analysis. For croppen the image, imageJ program will be used.
+
+
+    The Calibration Curve for the Flow Cell of xiangyu was made. This was done with the same solutions for the previous calibration curve. Namely 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 and 0.9g in 20ml. After each reading the flowcell was cleaned thorougly.
+
+    The DNG images taken for the calibration and were cropped using ImageJ, then analysed using Xiangyus code.
 
 
 
