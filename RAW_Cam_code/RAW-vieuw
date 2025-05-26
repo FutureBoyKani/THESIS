@@ -1,0 +1,14 @@
+import rawpy
+import imageio
+import matplotlib.pyplot as plt
+
+path = '/home/kaan/Documents/Canny-Edge-For-Plastic-1/011_0.05g_test_FlowCell_Cal/images/raw_captures/20250526_141225_full.dng'
+with rawpy.imread(path) as raw:
+    rgb = raw.postprocess()
+
+# Display the image
+plt.figure(figsize=(10, 10))
+plt.imshow(rgb)
+plt.axis('off')
+plt.show()
+
