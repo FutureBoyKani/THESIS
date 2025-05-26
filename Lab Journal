@@ -358,7 +358,7 @@ Date 23/04/25
 
     Did the data analysis of EXP10. Where the the fast dissolving plastic structure of PVB was dissolved in aceton.
 
-Date 23/04/25
+Date 26/04/25
     A code was tried to be written so that the DNG image was cropped automatically where the Flow Cell was. However this failed, since the code was too difficult to wright for me in a short time. So it was decided to make the calibration curve as xiangyu did.\
     This was by manually cropping the image and doing the analysis. For croppen the image, imageJ program will be used.
 
