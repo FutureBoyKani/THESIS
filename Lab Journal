@@ -368,7 +368,16 @@ Date 26/04/25
     The DNG images taken for the calibration and were cropped using ImageJ, then analysed using Xiangyus code.
 
 
+Date 27/04/25
+  Data analysis of the Calibration Curve of EXP11 was done. This was done using the code of Xiangyu.
 
+
+Date 28/04/25
+    Code was written to first take RAW format images and then do the data analyses of the images from the ROI crop. This is done making a CSV file for each colour. So for BLue, Green and Red. Each row of the CSV file is a time step and each collumn is a certain
+    path length. The code is called RAW_Crop.py.
+
+    UV-VIS readings were done of the PVB solutions used for the calibration curve of EXP11. With these we can determine if the Absortion and concentrations have a linear co-dependency. If this is the case we can be sure that the readings done with the picamera can be used.
+    This will also show which colour will be the most accurate to look at. In our case this will be blue, Since the peak in the visible spectrum in our case is around 430. This would be around the blue spectrum
 
 
 
