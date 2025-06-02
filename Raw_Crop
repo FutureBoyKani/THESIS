@@ -1,0 +1,384 @@
+import cv2
+import numpy as np
+from picamera2 import Picamera2
+import time
+import os
+import datetime
+import rawpy
+import pandas as pd
+import imageio
+import glob
+
+# Initialize camera with RAW configuration
+    # Eye-best settings
+settings = {
+    "ColourGains": (2.69, 1.43),
+    "AwbEnable": False,
+    "AeEnable": False,
+    "AfMode": 0,  # Manual mode
+    "LensPosition": 10.0,
+    "Sharpness": 1.0,
+    "Saturation": 1.0,
+    "Contrast": 1.0,
+    "Brightness": 0.0,
+    "AnalogueGain": 1.12,
+    "ExposureTime": 4100
+}
+
+# Define ROI parameters
+ROI_CENTERS = [
+    (2100, 1400) 
+]
+ROI_NAMES = ["ROI_1"]
+ROI_WIDTH = 700   # Width of rectangle in pixels
+ROI_HEIGHT = 350  # Height of rectangle in pixels
+
+center_x = ROI_CENTERS[0][0]
+center_y = ROI_CENTERS[0][1]   
+
+# Coordinates of left top corner of roi
+roi_coords = [
+    center_x - (ROI_WIDTH // 2),  # x coordinate
+    center_y - (ROI_HEIGHT // 2),  # y coordinate
+    ROI_WIDTH,                     # width
+    ROI_HEIGHT                     # height
+]
+
+def adjust_to_r_pixel(coords):
+    """Adjust coordinates to start from R pixel in RGGB pattern"""
+    x, y, w, h = coords
+    # Ensure x starts on an even column (R pixel)
+    if x % 2 != 0:
+        x -= 1
+    # Ensure y starts on an even row (R pixel)
+    if y % 2 != 0:
+        y -= 1
+    return [y, x, h, w]  # Return as [y, x, h, w] for array indexing
+
+# Transform coordinates and apply R pixel adjustment
+adjusted_coords = adjust_to_r_pixel(roi_coords)
+
+def process_dng_file(file_path, crop_coords):
+    """
+    Process DNG file and extract RGB channels with proper handling of Bayer pattern
+    Returns cropped RGB channels with zeros replaced by NaN
+    """
+    try:
+        with rawpy.imread(file_path) as raw:
+            # Get raw data and apply black level correction
+            raw_data = raw.raw_image_visible.copy()
+            raw_data = np.maximum(raw_data - 4096, 0)
+            pattern = raw.raw_pattern
+            
+            # Get dimensions
+            height, width = raw_data.shape
+
+            # Create masks for R/G/B channels
+            r_mask = np.zeros((height, width), dtype=bool)
+            g_mask = np.zeros_like(r_mask)
+            b_mask = np.zeros_like(r_mask)
+
+            # Create index grids for Bayer pattern
+            rows, cols = np.indices((height, width))
+            mod_rows = rows % 2
+            mod_cols = cols % 2
+
+            # Generate masks based on Bayer pattern
+            for r in range(2):
+                for c in range(2):
+                    color_code = pattern[r, c]
+                    mask = (mod_rows == r) & (mod_cols == c)
+                    if color_code == 0:  # Red
+                        r_mask[mask] = True
+                    elif color_code == 1:  # Green
+                        g_mask[mask] = True
+                    elif color_code == 2:  # Blue
+                        b_mask[mask] = True
+                    elif color_code == 3:  # Second green pixel
+                        g_mask[mask] = True
+
+            # Create and fill channel arrays
+            r_channel = np.zeros_like(raw_data)
+            g_channel = np.zeros_like(raw_data)
+            b_channel = np.zeros_like(raw_data)
+
+            r_channel[r_mask] = raw_data[r_mask]
+            g_channel[g_mask] = raw_data[g_mask]
+            b_channel[b_mask] = raw_data[b_mask]
+
+            # Crop channels
+            y, x, h, w = crop_coords
+            r_cropped = r_channel[y:y+h, x:x+w]
+            g_cropped = g_channel[y:y+h, x:x+w]
+            b_cropped = b_channel[y:y+h, x:x+w]
+
+            # Replace zeros with NaN
+            r_cropped = np.where(r_cropped == 0, np.nan, r_cropped)
+            g_cropped = np.where(g_cropped == 0, np.nan, g_cropped)
+            b_cropped = np.where(b_cropped == 0, np.nan, b_cropped)
+
+            return r_cropped, g_cropped, b_cropped
+    except Exception as e:
+        print(f"Error processing {file_path}: {e}")
+        return None, None, None
+
+def extract_timestamp_from_filename(filename):
+    """Extract datetime from filename like '20250528_143022_full'"""
+    try:
+        # Extract timestamp part (first two underscore-separated parts)
+        parts = filename.split('_')
+        if len(parts) >= 2:
+            timestamp_str = f"{parts[0]}_{parts[1]}"
+            return pd.to_datetime(timestamp_str, format='%Y%m%d_%H%M%S')
+    except:
+        pass
+    return None
+
+def process_all_dng_files(test_dir, crop_coords):
+    """
+    Process all DNG files in the raw_captures directory and create time series CSV files 
+    with each column representing a path length for each color
+    """
+    raw_captures_dir = os.path.join(test_dir, "images", "raw_captures")
+    csv_dir = os.path.join(test_dir, "data", "csv")
+    
+    # Get all DNG files
+    dng_files = glob.glob(os.path.join(raw_captures_dir, "*.dng"))
+    dng_files.sort()
+    
+    if not dng_files:
+        print(f"No DNG files found in {raw_captures_dir}")
+        return
+    
+    print(f"Found {len(dng_files)} DNG files to process")
+    
+    # Lists to store data for each color
+    red_data = []
+    green_data = []
+    blue_data = []
+    elapsed_times = []
+    
+    # Variable to store the first timestamp for elapsed time calculation
+    first_timestamp = None
+    
+    # Process all files
+    for i, file_path in enumerate(dng_files):
+        filename = os.path.basename(file_path).replace('.dng', '')
+        print(f"Processing {filename} ({i+1}/{len(dng_files)})")
+        
+        # Extract timestamp
+        timestamp = extract_timestamp_from_filename(filename)
+        if timestamp is None:
+            print(f"Warning: Could not parse timestamp from {filename}")
+            continue
+        
+        # Set first timestamp for elapsed time calculation
+        if first_timestamp is None:
+            first_timestamp = timestamp
+        
+        # Calculate elapsed time in seconds
+        elapsed_seconds = (timestamp - first_timestamp).total_seconds()
+        
+        r_cropped, g_cropped, b_cropped = process_dng_file(file_path, crop_coords)
+        
+        if r_cropped is None:
+            continue
+        
+        # Process each channel - get mean intensities across height for each column (path length)
+        r_mean = np.nanmean(r_cropped, axis=0)
+        g_mean = np.nanmean(g_cropped, axis=0)
+        b_mean = np.nanmean(b_cropped, axis=0)
+        
+        # Store data
+        elapsed_times.append(elapsed_seconds)
+        red_data.append(r_mean)
+        green_data.append(g_mean)
+        blue_data.append(b_mean)
+    
+    # Create path length values
+    # num_columns = len(red_data[0]) if red_data else 0
+    pathlength_values = np.linspace(1, 10, r_cropped.shape[1])  
+    
+    # Create column names for path lengths
+    pathlength_columns = [f"pathlength_{pl:.2f}" for pl in pathlength_values]
+    
+    # Create DataFrames for each color
+    if red_data:
+        # Red DataFrame
+        red_df = pd.DataFrame(red_data, columns=pathlength_columns)
+        red_df.insert(0, 'elapsed_seconds', elapsed_times)
+        
+        # Green DataFrame
+        green_df = pd.DataFrame(green_data, columns=pathlength_columns)
+        green_df.insert(0, 'elapsed_seconds', elapsed_times)
+        
+        # Blue DataFrame
+        blue_df = pd.DataFrame(blue_data, columns=pathlength_columns)
+        blue_df.insert(0, 'elapsed_seconds', elapsed_times)
+        
+        # Save CSV files
+        try:
+            red_path = os.path.join(csv_dir, "red_intensity_timeseries.csv")
+            green_path = os.path.join(csv_dir, "green_intensity_timeseries.csv")
+            blue_path = os.path.join(csv_dir, "blue_intensity_timeseries.csv")
+            
+            red_df.to_csv(red_path, index=False)
+            green_df.to_csv(green_path, index=False)
+            blue_df.to_csv(blue_path, index=False)
+            
+            print(f"Successfully saved CSV files:")
+            print(f"  Red: {red_path}")
+            print(f"  Green: {green_path}")
+            print(f"  Blue: {blue_path}")
+        except Exception as e:
+            print(f"Error saving CSV files: {e}")
+    
+    print("DNG processing complete!")
+
+def setup_directories(test_id):
+    """Set up all needed directories"""
+    test_name = input("Enter test name: ")
+    test_dir = f"{test_name}_test_{test_id}"
+    
+    subdirs = [
+        "images/raw_captures",
+        "data/csv"
+    ]
+    
+    for subdir in subdirs:
+        full_path = os.path.join(test_dir, subdir)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+            
+    return test_dir, test_name
+
+def process_roi(raw_array, roi_center):
+    """Process ROI using RAW data"""
+    center_x, center_y = roi_center
+    
+    # Calculate rectangle boundaries
+    x1 = max(0, center_x - ROI_WIDTH//2)
+    y1 = max(0, center_y - ROI_HEIGHT//2)
+    x2 = min(raw_array.shape[1], center_x + ROI_WIDTH//2)
+    y2 = min(raw_array.shape[0], center_y + ROI_HEIGHT//2)
+    
+    return (x1, y1, x2-x1, y2-y1)
+
+def main(test_id="001"):
+    picam2 = None
+    try:
+        # Setup directories
+        test_dir, test_name = setup_directories(test_id)
+        
+        picam2 = Picamera2()
+        capture_config = picam2.create_still_configuration(
+            raw={"size": picam2.sensor_resolution},  # RAW capture
+            main={"size": (4608, 2592)},            # Display frame
+            controls={"AfMode": 0}                  
+        )
+        preview_config = picam2.create_preview_configuration()
+        picam2.configure(preview_config)
+        
+        # Add sharpness control
+        lens_step = 0.5        # Step size for focus adjustment
+        
+        
+        print("Starting RAW capture. Controls:")
+        print("'q' - quit and process DNG files")
+        print("'s' - save current frame")
+        print("'p' - process existing DNG files")
+        
+        # Initialize timing
+        interval = 10
+        last_capture = 0  
+        
+        picam2.start()
+
+        # Apply eye-best settings
+        picam2.set_controls(settings)
+        print("Applied eye-best settings")
+
+        time.sleep(2)  # Allow camera to warm up
+        
+        while True:
+            current_time = time.time()
+            
+            # Capture RAW frame
+            request = picam2.switch_mode_and_capture_request(capture_config)
+            display_frame = request.make_array("main")
+            
+            # Draw the exact ROI coordinates that will be analyzed
+            # Convert adjusted_coords back to display coordinates: [y, x, h, w] -> (x, y, w, h)
+            y, x, h, w = adjusted_coords
+            
+            # Ensure coordinates are within frame boundaries
+            frame_height, frame_width = display_frame.shape[:2]
+            x = max(0, min(x, frame_width - 1))
+            y = max(0, min(y, frame_height - 1))
+            x2 = max(x + 1, min(x + w, frame_width - 1))
+            y2 = max(y + 1, min(y + h, frame_height - 1))
+            
+            # Draw rectangle for the exact analysis area
+            cv2.rectangle(display_frame,
+                        (x, y),
+                        (x2, y2),
+                        (0, 255, 0), 3)  # Green rectangle for exact ROI (thicker line)
+            
+            # Add red dot at the left corner (top-left)
+            cv2.circle(display_frame, (x, y), 6, (0, 0, 255), -1)  # Red dot (bigger)
+            
+            # Add label
+            label_y = max(15, y - 10)  # Ensure label is visible
+            cv2.putText(display_frame, f"Analysis ROI ({x},{y})",
+                      (x, label_y),
+                      cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                
+            # Auto-capture at intervals
+            if current_time - last_capture >= interval:
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                raw_path = os.path.join(test_dir, "images/raw_captures", f"{timestamp}_full.dng")
+                request.save_dng(raw_path)
+                print(f"Auto-saved: {timestamp}_full.dng")
+            
+            if current_time - last_capture >= interval:
+                last_capture = current_time
+            
+            # Display
+            display_frame = cv2.resize(display_frame, (1920, 1080))
+            cv2.imshow("Main View", display_frame)
+            
+            # Handle keys
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                print("Quitting and processing DNG files...")
+                break
+            elif key == ord('s'):
+                timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                raw_path = os.path.join(test_dir, "images/raw_captures", f"{timestamp}_full.dng")
+                request.save_dng(raw_path)
+                print(f"Manually saved: {timestamp}_full.dng")
+            elif key == ord('p'):
+                print("Processing existing DNG files...")
+                process_all_dng_files(test_dir, adjusted_coords)
+            request.release()
+        
+        # Process DNG files after quitting
+        if picam2:
+            picam2.stop()
+        cv2.destroyAllWindows()
+        
+        print("Processing all captured DNG files...")
+        process_all_dng_files(test_dir, adjusted_coords)
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        if picam2:
+            picam2.stop()
+        cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    test_id = input("Enter test ID (e.g., 001): ")
+    main(test_id)
