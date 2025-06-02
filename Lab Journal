@@ -381,6 +381,15 @@ Date 28/04/25
 
 
 
+Date 30/04/14
+    analysed the data from the UV-Vis reading. The peak was at a Lambda of 411nm and the absorption line over multiple concentration was linear. This seemed to agree with was accepted and indicates that the blue spectrum has the most details. This will then be the primary
+    channel that will be looked at trough the code. 
+  
+Date 02/04/25
+
+    Made 3d printable shapes with different dissolving times.
+    Finished the the code that takes raw images then analyses the crop coords. Added a function that it has the camera settings as constants. Gotten the new flowcell from Xiangyu. Planning is testing the flowcell with the pump tomorrow and hopefully starting a new experiments
+    on Wednesday.
 
 
 
