@@ -6,13 +6,11 @@ import os
 import datetime
 import rawpy
 import pandas as pd
-import imageio
 import glob
 
 # Initialize camera with RAW configuration
-    # Eye-best settings
 settings = {
-    "ColourGains": (2.69, 1.43),
+    "ColourGains": (2.68, 1.478),
     "AwbEnable": False,
     "AeEnable": False,
     "AfMode": 0,  # Manual mode
@@ -22,27 +20,92 @@ settings = {
     "Contrast": 1.0,
     "Brightness": 0.0,
     "AnalogueGain": 1.12,
-    "ExposureTime": 4100
+    "ExposureTime": 2600
 }
 
-# Define ROI parameters
-ROI_CENTERS = [
-    (2100, 1400) 
-]
-ROI_NAMES = ["ROI_1"]
-ROI_WIDTH = 700   # Width of rectangle in pixels
-ROI_HEIGHT = 350  # Height of rectangle in pixels
+def crop_image(img_display_copy): # Renamed 'img' to 'img_display_copy' for clarity
+    """
+    Detects four circles in an image and calculates a rectangular ROI
+    based on their sorted positions. It also draws the detected circles
+    and the calculated ROI on the input image for visualization.
 
-center_x = ROI_CENTERS[0][0]
-center_y = ROI_CENTERS[0][1]   
+    Args:
+        img_display_copy (numpy.ndarray): A copy of the image on which circles and ROI
+                                          will be drawn for display.
 
-# Coordinates of left top corner of roi
-roi_coords = [
-    center_x - (ROI_WIDTH // 2),  # x coordinate
-    center_y - (ROI_HEIGHT // 2),  # y coordinate
-    ROI_WIDTH,                     # width
-    ROI_HEIGHT                     # height
-]
+    Returns:
+        list: [x, y, width, height] of the calculated ROI, or None if not enough
+              circles are detected or no circles are found.
+    """
+    gray = cv2.cvtColor(img_display_copy, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    
+    # Parameters for HoughCircles can be tuned.
+    # dp: inverse ratio of the accumulator resolution to the image resolution.
+    # minDist: minimum distance between the centers of the detected circles.
+    # param1: higher threshold for the Canny edge detector (used internally).
+    # param2: accumulator threshold for the circle centers.
+    # minRadius/maxRadius: range of circle radii to detect.
+    circles = cv2.HoughCircles(blurred, cv2.HOUGH_GRADIENT, dp=1, minDist=10,
+                               param1=50, param2=30, minRadius=0, maxRadius=40)
+    
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+        
+        # Ensure we have at least 4 circles to define the rectangle
+        if len(circles[0]) >= 4:
+            # Convert circle coordinates to points (x, y)
+            # We take the first 4 circles, assuming they correspond to the corners
+            points = [(x, y) for (x, y, r) in circles[0][:4]]
+            
+            # Sort points by x coordinate first
+            points.sort(key=lambda p: p[0])
+            
+            # Split into left and right pairs
+            left_pair = sorted(points[:2], key=lambda p: p[1])  # Sort left by y
+            right_pair = sorted(points[2:], key=lambda p: p[1]) # Sort right by y
+            
+            # Extract corner points (assuming roughly rectangular arrangement)
+            top_left = left_pair[0]
+            bottom_left = left_pair[1]
+            top_right = right_pair[0]
+            bottom_right = right_pair[1]
+            
+            # Calculate ROI coordinates based on these four points
+            # We take the minimum x and y for top-left, and maximum x and y for bottom-right
+            # This ensures the rectangle encloses all four points
+            x = bottom_left[0] 
+            y = top_left[1] - 30  # Use the y of the top-left point
+            width = bottom_right[0] - bottom_left[0] 
+            height = 50 # Fixed height for the rectangle
+            
+            # Add some padding to the ROI to ensure it fully encompasses the detected circles
+            padding = 10
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            width = width + 2 * padding
+            height = height + 2 * padding
+            
+            # --- Visualization on the `img_display_copy` ---
+            # Draw detected circles
+            for circle in circles[0][:4]:
+                center = (circle[0], circle[1])
+                radius = circle[2]
+                cv2.circle(img_display_copy, center, radius, (0, 255, 0), 2)
+            
+            # Draw ROI rectangle on the `img_display_copy`
+            cv2.rectangle(img_display_copy, (x, y), (x + width, y + height), (0, 0, 255), 2) # Red rectangle
+            # --- End Visualization ---
+
+            return [x, y, width, height]
+            
+        else:
+            print(f"Not enough circles detected. Found {len(circles[0])} circles, need 4.")
+            return None
+    else:
+        print("No circles were detected.")
+        return None
+
 
 def adjust_to_r_pixel(coords):
     """Adjust coordinates to start from R pixel in RGGB pattern"""
@@ -54,9 +117,6 @@ def adjust_to_r_pixel(coords):
     if y % 2 != 0:
         y -= 1
     return [y, x, h, w]  # Return as [y, x, h, w] for array indexing
-
-# Transform coordinates and apply R pixel adjustment
-adjusted_coords = adjust_to_r_pixel(roi_coords)
 
 def process_dng_file(file_path, crop_coords):
     """
@@ -196,7 +256,6 @@ def process_all_dng_files(test_dir, crop_coords):
         blue_data.append(b_mean)
     
     # Create path length values
-    # num_columns = len(red_data[0]) if red_data else 0
     pathlength_values = np.linspace(1, 10, r_cropped.shape[1])  
     
     # Create column names for path lengths
@@ -252,18 +311,6 @@ def setup_directories(test_id):
             
     return test_dir, test_name
 
-def process_roi(raw_array, roi_center):
-    """Process ROI using RAW data"""
-    center_x, center_y = roi_center
-    
-    # Calculate rectangle boundaries
-    x1 = max(0, center_x - ROI_WIDTH//2)
-    y1 = max(0, center_y - ROI_HEIGHT//2)
-    x2 = min(raw_array.shape[1], center_x + ROI_WIDTH//2)
-    y2 = min(raw_array.shape[0], center_y + ROI_HEIGHT//2)
-    
-    return (x1, y1, x2-x1, y2-y1)
-
 def main(test_id="001"):
     picam2 = None
     try:
@@ -279,25 +326,25 @@ def main(test_id="001"):
         preview_config = picam2.create_preview_configuration()
         picam2.configure(preview_config)
         
-        # Add sharpness control
-        lens_step = 0.5        # Step size for focus adjustment
-        
-        
         print("Starting RAW capture. Controls:")
         print("'q' - quit and process DNG files")
         print("'s' - save current frame")
         print("'p' - process existing DNG files")
+        print("'r' - reset ROI detection and re-detect on next frame") # Added 'r' option
         
         # Initialize timing
-        interval = 10
+        interval = 120
         last_capture = 0  
+        # Initialize ROI coordinates to None; it will be detected on the first frame
+        roi_coords = None  
+        adjusted_coords = None # To store the R-pixel adjusted coordinates for DNG processing
         
         picam2.start()
-
+        
         # Apply eye-best settings
         picam2.set_controls(settings)
         print("Applied eye-best settings")
-
+        
         time.sleep(2)  # Allow camera to warm up
         
         while True:
@@ -307,59 +354,68 @@ def main(test_id="001"):
             request = picam2.switch_mode_and_capture_request(capture_config)
             display_frame = request.make_array("main")
             
-            # Draw the exact ROI coordinates that will be analyzed
-            # Convert adjusted_coords back to display coordinates: [y, x, h, w] -> (x, y, w, h)
-            y, x, h, w = adjusted_coords
+            # --- Main change: Use crop_image to find and draw ROI ---
+            if roi_coords is None:
+                # Pass a copy of display_frame to crop_image so it can draw on it
+                # without affecting the original frame used for processing later
+                roi_coords = crop_image(display_frame.copy()) 
+                if roi_coords is not None:
+                    # If ROI is successfully detected, calculate adjusted_coords once
+                    adjusted_coords = adjust_to_r_pixel(roi_coords)
+                    print(f"ROI detected: {roi_coords}. Adjusted for R-pixel: {adjusted_coords}")
+                else:
+                    print("ROI could not be detected. Please ensure 4 distinct circles are visible.")
             
-            # Ensure coordinates are within frame boundaries
-            frame_height, frame_width = display_frame.shape[:2]
-            x = max(0, min(x, frame_width - 1))
-            y = max(0, min(y, frame_height - 1))
-            x2 = max(x + 1, min(x + w, frame_width - 1))
-            y2 = max(y + 1, min(y + h, frame_height - 1))
-            
-            # Draw rectangle for the exact analysis area
-            cv2.rectangle(display_frame,
-                        (x, y),
-                        (x2, y2),
-                        (0, 255, 0), 3)  # Green rectangle for exact ROI (thicker line)
-            
-            # Add red dot at the left corner (top-left)
-            cv2.circle(display_frame, (x, y), 6, (0, 0, 255), -1)  # Red dot (bigger)
-            
-            # Add label
-            label_y = max(15, y - 10)  # Ensure label is visible
-            cv2.putText(display_frame, f"Analysis ROI ({x},{y})",
-                      (x, label_y),
-                      cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            # If ROI is detected, draw it on the current display_frame
+            if roi_coords is not None:
+                x, y, w, h = roi_coords
                 
-            # Auto-capture at intervals
-            if current_time - last_capture >= interval:
+                # Draw rectangle for the exact analysis area
+                cv2.rectangle(display_frame,
+                            (x, y),
+                            (x + w, y + h),
+                            (0, 255, 0), 3) # Green rectangle
+                
+                # Add red dot at the top-left corner
+                cv2.circle(display_frame, (x, y), 6, (0, 0, 255), -1) # Red dot
+                
+                # Add label
+                label_y = max(15, y - 10) # Ensure label is visible at the top
+                cv2.putText(display_frame, f"Analysis ROI ({x},{y})",
+                          (x, label_y),
+                          cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+            # --- End Main Change ---
+            
+            # Auto-capture at intervals (only if ROI has been detected)
+            if current_time - last_capture >= interval and adjusted_coords is not None:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 raw_path = os.path.join(test_dir, "images/raw_captures", f"{timestamp}_full.dng")
                 request.save_dng(raw_path)
                 print(f"Auto-saved: {timestamp}_full.dng")
-            
-            if current_time - last_capture >= interval:
                 last_capture = current_time
             
             # Display
-            display_frame = cv2.resize(display_frame, (1920, 1080))
-            cv2.imshow("Main View", display_frame)
+            display_frame_resized = cv2.resize(display_frame, (1920, 1080)) # Resize for display
+            cv2.imshow("Main View", display_frame_resized)
             
             # Handle keys
             key = cv2.waitKey(1) & 0xFF
             if key == ord('q'):
                 print("Quitting and processing DNG files...")
                 break
-            elif key == ord('s'):
+            elif key == ord('s') and adjusted_coords is not None:
                 timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 raw_path = os.path.join(test_dir, "images/raw_captures", f"{timestamp}_full.dng")
                 request.save_dng(raw_path)
                 print(f"Manually saved: {timestamp}_full.dng")
-            elif key == ord('p'):
+            elif key == ord('p') and adjusted_coords is not None:
                 print("Processing existing DNG files...")
                 process_all_dng_files(test_dir, adjusted_coords)
+            elif key == ord('r'):
+                print("Resetting ROI detection...")
+                roi_coords = None # Reset roi_coords to trigger re-detection
+                adjusted_coords = None
+            
             request.release()
         
         # Process DNG files after quitting
@@ -367,8 +423,9 @@ def main(test_id="001"):
             picam2.stop()
         cv2.destroyAllWindows()
         
-        print("Processing all captured DNG files...")
-        process_all_dng_files(test_dir, adjusted_coords)
+        if adjusted_coords is not None: # Ensure adjusted_coords is available for final processing
+            print("Processing all captured DNG files...")
+            process_all_dng_files(test_dir, adjusted_coords)
         
     except Exception as e:
         print(f"Error: {e}")
