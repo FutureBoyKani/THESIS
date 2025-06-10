@@ -256,7 +256,7 @@ date 09/05/25
 
 
 
-date 12/04/25
+date 12/05/25
     Had a conversation with Vittorio about the project. 
         The projects I am working on now has been changed. Now I will use my code to continue another reasearch. This is about measuring the dissolving time of a plastic structure. The plastics here is colored and will leave a color in the solvent. Then this color change will be measured in pixel intensity. This is done by using the same code
         as was used before, only with the area detection removed and only looking pixel intensity.
@@ -274,7 +274,7 @@ date 12/04/25
           - 0.8g PVB in 20mL ispropanol
           - 1g PVB in 20mL ispropanol
 
-date 13/04/25
+date 13/05/25
     Coming back it was noticed that all the PVB was luckily dissolved overnight. Seeing this I decided to dissolve more. These amounts were:
           - 1.2g PVB in 20mL ispropanol
           - 1.4g PVB in 20mL ispropanol
@@ -285,7 +285,7 @@ date 13/04/25
 
     The plastic pieces needed for the experiment were printed out.
 
-Date 14/04/25
+Date 14/05/25
     After discussing with a collegue in the lab. It was decided that the calibraion curve experiment done yesterday was not good enough. Firstly the solutions were kept in their plastic holders. These plastic braek the light differently than glass. Which would be
     used in the main experiment. So the results were not accurate. Also the plastic containers had blue caps, which reflected into the liquid, due the the effect of the lightpad behind the plastic container altering the results. Now in the exp009, 
     glass vials were used and the experiments was done one measurment at a time, to keep all the measurments as constant as possible. The following conentrations were used:
@@ -309,7 +309,7 @@ Date 14/04/25
     Is best to use for this experiment.
 
 
-Date 15/04/25
+Date 15/05/25
 
     After a discussion with a colleague, I decided to change my conclusion for the calibration curve. I decided to use 0.03g point until the 0,02 gram point. This seemed to give an R of 1 and seemed to be much more accurate than the other once. Thus the concentrations of
     measurment will be between
@@ -323,7 +323,7 @@ Date 15/04/25
     It was testet to see if the container would no melt with the isopromapol: This seemed to be the case.
 
 
-Date 16/04/25
+Date 16/05/25
     The experiment was not finished yet. So it was decided to keep it running over the weekend.
     
 
@@ -333,17 +333,17 @@ Date 19/04/25
 
     The rest of the day Xiangyu explained the theory behind the new cuvet and explained how to analyse the DNG(RAW) pictures. However I was thinking of another way to do this. Instead of manually doing the analysis, I would set up the ROI 
 
-Date 20/04/25
+Date 20/05/25
     Day was spend working on the code, that let's me take a collumn of 1 pixel with a certain height. Then it calculates the pixel intensity of each red, green and yellow colored collumn in the row. However this was failed, since I did not manage to succeed the whole day.
 
-Date 21/04/25
+Date 21/05/25
     A 3d printed black box was made, where the triangular cuvet could be hold in place and the camera could be directly placed on top.
 
     The code I was working on yesterday was continued. However I changed the idea behind it. Instead of creating a collumn of one pixel thick. I would make multiple ROI's withing the see trough area. Than assign a thickness to those ROI's and take the average color
     intensity of the RGB values. This in theory is less acurate, however it seems to be much easier to code in. However after spending multiple hours, I could not get the code to work with RAW camera format. So I need more time to look into this or to do the measurments,
     in normal video format and not raw. Which would then again be less acurate.
 
-Date 22/04/25
+Date 22/05/25
     The printed box had failed. Started the print once again. 
 
     Today Tried again to get the average intensity of RGB colours inside a row. However, after discussing this with xiangyu, I was told that this was inpossible to do for a raw image file. Thus after trying to code this, I decided to abandon the idea and instead 
@@ -358,7 +358,7 @@ Date 23/04/25
 
     Did the data analysis of EXP10. Where the the fast dissolving plastic structure of PVB was dissolved in aceton.
 
-Date 26/04/25
+Date 26/05/25
     A code was tried to be written so that the DNG image was cropped automatically where the Flow Cell was. However this failed, since the code was too difficult to wright for me in a short time. So it was decided to make the calibration curve as xiangyu did.\
     This was by manually cropping the image and doing the analysis. For croppen the image, imageJ program will be used.
 
@@ -368,11 +368,11 @@ Date 26/04/25
     The DNG images taken for the calibration and were cropped using ImageJ, then analysed using Xiangyus code.
 
 
-Date 27/04/25
+Date 27/05/25
   Data analysis of the Calibration Curve of EXP11 was done. This was done using the code of Xiangyu.
 
 
-Date 28/04/25
+Date 28/05/25
     Code was written to first take RAW format images and then do the data analyses of the images from the ROI crop. This is done making a CSV file for each colour. So for BLue, Green and Red. Each row of the CSV file is a time step and each collumn is a certain
     path length. The code is called RAW_Crop.py.
 
@@ -381,15 +381,38 @@ Date 28/04/25
 
 
 
-Date 30/04/14
+Date 30/05/14
     analysed the data from the UV-Vis reading. The peak was at a Lambda of 411nm and the absorption line over multiple concentration was linear. This seemed to agree with was accepted and indicates that the blue spectrum has the most details. This will then be the primary
     channel that will be looked at trough the code. 
   
-Date 02/04/25
+Date 02/06/25  -  6/06/25
 
     Made 3d printable shapes with different dissolving times.
     Finished the the code that takes raw images then analyses the crop coords. Added a function that it has the camera settings as constants. Gotten the new flowcell from Xiangyu. Planning is testing the flowcell with the pump tomorrow and hopefully starting a new experiments
     on Wednesday.
+
+    Rest of the week was mostly spend on getting the setup correct
+        - The first flowcell kepts leaking, even after glueing, so it was changed with another flowcell
+        - The commercial pump tubes were too large for the tubes in the lab. So the pump of xiangyu was used and reprogrammed.
+        - Other small things were improved from the setup.
+
+    Friday of this week experiment 012 was started:
+        Here a new plastic with differing dissolving times was made to dissolve. However the solution this time would be pumped into the flowcell where the camera takes raw pictures and then analyses them and puts the intensities in an csv file for each colour. 
+        where each row is a time step and each collumn is a pathlength of the flowcell.
+
+
+Date 10/06/25
+
+    Found out that experiment 012 failed:
+        -The code stopped working after 1.5 days, for some reason, no more pictures were being taken
+        -Somewhere along the test the pump got cloged and stopped pumping
+        -There was a leak; The output tube in the flowcell got pushed out.    
+
+    Made a code whith CLaude that analyses the data.
+  
+    Still there was some data. This data was analysed and it does look promising. It should be verified with a calibration curve.
+
+    Made a 2g/40mL solution for the calibration curve.
 
 
 
