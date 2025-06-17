@@ -398,7 +398,7 @@ Date 02/06/25  -  6/06/25
 
     Friday of this week experiment 012 was started:
         Here a new plastic with differing dissolving times was made to dissolve. However the solution this time would be pumped into the flowcell where the camera takes raw pictures and then analyses them and puts the intensities in an csv file for each colour. 
-        where each row is a time step and each collumn is a pathlength of the flowcell.
+        where each row is a time step and each collumn is a pathlength of the flowcell. This plastic piece weith 2.13 grams and was dissolved in 85 ml of isopropanol. 
 
 
 Date 10/06/25
@@ -416,9 +416,26 @@ Date 10/06/25
 
 
 
+Date 11/06/25
+  Made the new calibration curve for the new flowcell using the 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.2 g/20mL concentrations
+  Printed out new parts and tried to fix the broken pump
+
+
+Date 12/06/25
+  Finished the Analysis of the new calibration curve data
+  Found out pump and arduino were more broken than thought. Could not do any further research/practicals without. Ordered a new commercial pump from the internet.
 
 
 
+
+Date 13/06/25
+  Started writing the introduction of my thesis
+
+
+
+Date 16+17/06/25
+
+  Worked on writing thesis and literature presentation.
 
 
 
