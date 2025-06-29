@@ -1,38 +1,13 @@
 # Lab Journal: Kaan Yalcin:
 
-Date 24/03/25
+Date 24/03/25 - 04/04/25
   Raspberry pi was set up. Started to look at how the camera functioned and which packages were needed.
-
-
-Date 25/03/25
-
-
-
-
-Date 26/03/25
-
-
-
-Date 27/03/25
-  Resit for minor in Radboud
-
-
-
-Date 28/03/25
-
-
-
-Date 31/03/25
-  Resit for minor in Radboud
-
-Date 1/04/25
-
-Date 2/04/25
-
-Date 3/04/25
-  Resit for minor in Radboud
-
-Date 4/04/25
+  Tried to understand how the PI OS worked
+  Tried to create a tunnel account and pi connect account to work from home if necessary
+  Looked at some example codes of the algorithms I need
+  Tried out some coding functions to get a better understanding
+  Coded some basic edge detections
+  Learned for Retake Exams for my minor.
 
 
 
