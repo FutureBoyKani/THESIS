@@ -423,7 +423,7 @@ Date 11/06/25
 
 Date 12/06/25
   Finished the Analysis of the new calibration curve data
-  Found out pump and arduino were more broken than thought. Could not do any further research/practicals without. Ordered a new commercial pump from the internet.
+  Found out pump and arduino were more broken than thought. Could not do any further research/practicals without. Ordered a new tubing from the internet that should fit better on the older pump and should not cause air bubbles within the flowcell
 
 
 
@@ -437,7 +437,50 @@ Date 16+17/06/25
 
   Worked on writing thesis and literature presentation.
 
+Date 18-20/06/25
+  New tubing arrived and it did seem to work withoud buubbles
+  Started experiment 013
+    -Fast-Slow PVB structure of 7.22 grams dissolved in 200mL Isopropanol
+    -Pumped the solvent trough the pump
+    -Picamera from a 3d printed black box was made too look at it.
 
+  Results 013:
+    -The new tubing was is too thich for the pump. After some time it stopped pumping the solvent. Data gotten from the experiment could not be used 
+
+  Started experiment 014
+    - Smaller Fast-Slow PVB structure of 2.16 grams, made to dissolve in 86 mL of Isopropanol
+    - This was made smaller and less concentrated in the hopes of that the plastic would dissolve faster, so that we could see a change is dissolving speeds.
+    - The same set up was used as in the previous experiment
+
+  Results 014
+    - Again the plastic did not dissolve fast enough and this time the pump failed even faster.
+    - Decided the plastic structures and pump were not good enough. 
+    - Made new plastic designs that have far thinner stick out points, so that they would dissolve fast enough that the pump won't stup
+    - Also found a new pump in the case the new design of structure would not work.
+
+  Printed out the new plastic (Kdesign2) structures
+
+Date 23-17/06/25
+  Started Exp 015
+    - 1.024 grams of Kdesign2 plastic structure fast slow in ~20mL Isopropanol
+    - Concentration was hired, because the fast dissolving part of this structure is very little plastic
+    -Same as the previous set ups
+
+  Results Exp015
+    - Fast dissolving part was completely dissolved
+    - Slow dissolving part was half dissolved
+    - Did the data analysis of this experiment
+
+
+  Started Exp 016
+    - 1.159 Grams of Kdesign2 plastic structure fast slow fast in ~22mL Isopropanol
+    - Same set up
+
+  Results Exp016
+    - Fast dissolving part was completely dissolved
+    - Slow dissolving part was completely dissolved
+    - Fast dissolving part was completely dissolved
+    - Did the data analysis of this experiment
 
 
 
