@@ -458,6 +458,28 @@ Date 23-17/06/25
     - Did the data analysis of this experiment
 
 
+Date 30/06/25 - 5/07/25
+  Started exp 017
+    - Slow Dissolving Slow Structure: 1.64 grams PVB construct in ~27 mL isopropanol (0.06 g/ml)
+    - Same setup
+
+  Ended exp017
+    - Bubbles appeared due to high viscocity
+    - Wierd result, since same concentration in other experiments were no bubble
+    - Perhaps the solution evapurated.
+    - Did the data analyses, shows the concentration was a bit higher.
+
+  Started exp 018
+    - Slow-Fast Structure: 1.34 grams PVB construct in 44 mL isopropanol (0.03 g/ ml)
+    - Concentration was halved to prevent bubbles forming.
+
+  Ended exp 018
+    - The code stopped working, so not the whole experiment could be done
+    - Needed to find the ROI manually
+    - Did the data analyses
+    - Results did not show two dissolving rates.
+    - Start of dissolving concentration was to low to measure.
+
 
 
 
